@@ -1,4 +1,10 @@
 {
   "parser": "babel-eslint",
-  "extends": "airbnb"
+  "extends": "airbnb",
+  "plugins": [
+    "mocha"
+  ],
+  "env": {
+    "mocha": true
+  }
 }
