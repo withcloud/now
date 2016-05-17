@@ -1,0 +1,12 @@
+*.log
+.package.json
+
+# artifacts & source
+src/
+test/
+
+# dotfiles
+.eslintrc
+.babelrc
+.gitignore
+.git
