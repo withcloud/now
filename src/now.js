@@ -3,7 +3,7 @@ const axios = require('axios');
 function Now(token) {
   if (!(this instanceof Now)) return new Now(token);
   this.token = token;
-  this.request = axios.create({
+  this.axios = axios.create({
     baseURL: 'https://api.zeit.co/now',
     timeout: 3000,
     headers: { Authorization: `Bearer ${token}` },
@@ -20,7 +20,7 @@ now.handleCallback = function handleCallback(callback, err, data) {
 
 now.handleRequest = function handleRequest(config, callback, selector) {
   return new Promise((resolve, reject) => {
-    this.request(config)
+    this.axios.request(config)
       .then((res) => {
         const data = selector ? res.data[selector] : res.data;
 

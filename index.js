@@ -1,1 +1,1 @@
-module.exports = require('./src/now');
+module.exports = require('./lib/now');

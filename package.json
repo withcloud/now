@@ -1,6 +1,6 @@
 {
   "name": "now-api",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "𝚫 now API",
   "main": "./lib/telegram.js",
   "scripts": {
