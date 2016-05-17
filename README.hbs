@@ -1,0 +1,36 @@
+[![Build Status](https://travis-ci.org/TimoLins/now-api.svg)](https://travis-ci.org/TimoLins/now-api)
+
+# 𝚫 now API
+
+Node.js module to interact with official [𝚫 now API](https://zeit.co/api). You need to provide your API token, which you can find in `~/.now.json`.
+
+
+```sh
+npm install now-api
+```
+## Example
+```js
+var Now = require('now-api');
+
+var now = Now("YOUR TOKEN");
+
+// Supports Promises
+now.getDeployments().then((deployments) => {
+    console.log(deployments);
+}).catch((err) => {
+    console.error(err);
+});
+
+// Or go old-school with callbacks
+now.getDeployments(function(err, deployments) {
+    if (err) throw err;
+    console.log(deployments);
+});
+```
+
+## API Reference
+{{#class name="Now"~}}
+{{>body~}}
+{{>member-index~}}
+{{>members~}}
+{{/class}}

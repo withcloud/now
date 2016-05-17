@@ -4,8 +4,9 @@
   "description": "𝚫 now API",
   "main": "./lib/telegram.js",
   "scripts": {
-    "prepublish": "./node_modules/.bin/babel -d ./lib src",
+    "prepublish": "./node_modules/.bin/babel -d ./lib src && npm run gen-doc",
     "eslint": "./node_modules/.bin/eslint ./src",
+    "gen-doc": "./node_modules/.bin/jsdoc2md --src src/now.js -t README.hbs > README.md",
     "test": "./node_modules/.bin/mocha test/index.js"
   },
   "repository": {
@@ -31,6 +32,7 @@
     "eslint-plugin-jsx-a11y": "^1.2.0",
     "eslint-plugin-mocha": "^2.2.0",
     "eslint-plugin-react": "^5.1.1",
+    "jsdoc-to-markdown": "^1.3.6",
     "mocha": "^2.4.5"
   },
   "dependencies": {
