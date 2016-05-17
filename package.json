@@ -7,7 +7,7 @@
     "prepublish": "./node_modules/.bin/babel -d ./lib src && npm run gen-doc",
     "eslint": "./node_modules/.bin/eslint ./src",
     "gen-doc": "./node_modules/.bin/jsdoc2md --src src/now.js -t README.hbs > README.md",
-    "test": "./node_modules/.bin/mocha test/index.js"
+    "test": "./node_modules/.bin/mocha test/index.js --compilers js:babel-register"
   },
   "repository": {
     "type": "git",
