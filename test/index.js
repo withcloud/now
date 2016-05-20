@@ -5,6 +5,8 @@ chai.should();
 
 const TOKEN = process.env.TEST_NOW_TOKEN;
 
+//DEBUG ONLY
+
 if (!TOKEN) {
   throw new Error('now token not provided');
 }
@@ -41,6 +43,7 @@ describe('Now', function tests() {
     now.getDeployments()
     .then((data) => {
       data.should.be.an('array');
+      console.log(data);
       done();
     }).catch((err) => {
       done(new Error(err.message));
