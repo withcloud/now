@@ -1,6 +1,6 @@
 {
   "name": "now-api",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "𝚫 now API",
   "main": "./lib/telegram.js",
   "scripts": {
@@ -19,24 +19,24 @@
     "zeit",
     "deploy"
   ],
-  "author": "Timo Lins",
+  "author": "Timo Lins <me@timo.sh> (https://timo.sh/)",
   "license": "MIT",
   "devDependencies": {
-    "babel-cli": "^6.8.0",
+    "babel-cli": "^6.9.0",
     "babel-eslint": "^6.0.4",
-    "babel-preset-es2015": "^6.6.0",
-    "babel-register": "^6.8.0",
+    "babel-preset-es2015": "^6.9.0",
+    "babel-register": "^6.9.0",
     "chai": "^3.5.0",
-    "eslint": "^2.10.2",
+    "eslint": "^2.11.1",
     "eslint-config-airbnb": "^9.0.1",
-    "eslint-plugin-import": "^1.8.0",
-    "eslint-plugin-jsx-a11y": "^1.2.0",
-    "eslint-plugin-mocha": "^2.2.0",
+    "eslint-plugin-import": "^1.8.1",
+    "eslint-plugin-jsx-a11y": "^1.2.3",
+    "eslint-plugin-mocha": "^3.0.0",
     "eslint-plugin-react": "^5.1.1",
     "jsdoc-to-markdown": "^1.3.6",
-    "mocha": "^2.4.5"
+    "mocha": "^2.5.3"
   },
   "dependencies": {
-    "axios": "^0.11.0"
+    "axios": "^0.12.0"
   }
 }

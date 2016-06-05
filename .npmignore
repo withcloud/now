@@ -4,6 +4,7 @@
 # artifacts & source
 src/
 test/
+README.hbs
 
 # dotfiles
 .eslintrc

@@ -12,7 +12,7 @@ npm install now-api
 ```js
 var Now = require('now-api');
 
-var now = Now("YOUR TOKEN");
+var now = Now('YOUR TOKEN');
 
 // Supports Promises
 now.getDeployments().then((deployments) => {
@@ -39,6 +39,9 @@ now.getDeployments(function(err, deployments) {
     * [.deleteDeployment(id, [callback])](#Now+deleteDeployment) ⇒ <code>Promise</code>
     * [.getFiles(id, [callback])](#Now+getFiles) ⇒ <code>Promise</code>
     * [.getFile(id, fileId, [callback])](#Now+getFile) ⇒ <code>Promise</code>
+    * [.getAliases([id OR callback], [callback])](#Now+getAliases) ⇒ <code>Promise</code>
+    * [.createAlias(id, alias, [callback])](#Now+createAlias) ⇒ <code>Promise</code>
+    * [.deleteAlias(id, [callback])](#Now+deleteAlias) ⇒ <code>Promise</code>
 
 <a name="new_Now_new"></a>
 
@@ -112,7 +115,7 @@ Returns an array with the file structure.
 | Param | Type | Description |
 | --- | --- | --- |
 | id | <code>String</code> | ID of deployment |
-| [callback] | <code>function</code> | Callback will be called with `(err, deployment)` |
+| [callback] | <code>function</code> | Callback will be called with `(err, fileStructure)` |
 
 <a name="Now+getFile"></a>
 
@@ -126,5 +129,45 @@ Returns the content of a file.
 | --- | --- | --- |
 | id | <code>String</code> | ID of deployment |
 | fileId | <code>String</code> | ID of the file |
-| [callback] | <code>function</code> | Callback will be called with `(err, deployment)` |
+| [callback] | <code>function</code> | Callback will be called with `(err, file)` |
+
+<a name="Now+getAliases"></a>
+
+### now.getAliases([id OR callback], [callback]) ⇒ <code>Promise</code>
+Returns an array with all aliases.
+
+**Kind**: instance method of <code>[Now](#Now)</code>  
+**See**: https://zeit.co/api#user-aliases  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| [id OR callback] | <code>String</code> &#124; <code>function</code> | ID of deployment or callback |
+| [callback] | <code>function</code> | Callback will be called with `(err, aliases)` |
+
+<a name="Now+createAlias"></a>
+
+### now.createAlias(id, alias, [callback]) ⇒ <code>Promise</code>
+Creates a new alias for the given deployment.
+
+**Kind**: instance method of <code>[Now](#Now)</code>  
+**See**: https://zeit.co/api#create-alias  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| id | <code>String</code> | ID of deployment |
+| alias | <code>String</code> | Hostname or custom url for the alias |
+| [callback] | <code>function</code> | Callback will be called with `(err, data)` |
+
+<a name="Now+deleteAlias"></a>
+
+### now.deleteAlias(id, [callback]) ⇒ <code>Promise</code>
+Deletes a alias and returns a status.
+
+**Kind**: instance method of <code>[Now](#Now)</code>  
+**See**: https://zeit.co/api#delete-user-aliases  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| id | <code>String</code> | ID of alias |
+| [callback] | <code>function</code> | Callback will be called with `(err, status)` |
 

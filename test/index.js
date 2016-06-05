@@ -10,12 +10,13 @@ if (!TOKEN) {
 }
 
 describe('Now', function tests() {
-  this.timeout(10000);
+  this.timeout(60000); // Wait 1 minute, since deleting a deployment takes forever.
 
   const now = new Now(TOKEN);
 
   let instanceId;
   let fileId;
+  let aliasId;
 
   it('should create deployment', (done) => {
     now.createDeployment({
@@ -84,6 +85,60 @@ describe('Now', function tests() {
     now.getFile(instanceId, fileId)
     .then((data) => {
       data.should.be.a('string');
+
+      done();
+    }).catch((err) => {
+      done(new Error(err.message));
+    });
+  });
+
+  it('should create alias', (done) => {
+    now.createAlias(instanceId, `${instanceId}.now.sh`)
+    .then((data) => {
+      data.should.be.an('object');
+      aliasId = data.uid;
+      aliasId.should.be.a('string');
+      done();
+    })
+    .catch((err) => {
+      done(new Error(err.message));
+    });
+  });
+
+  it('should retrieve aliases', (done) => {
+    now.getAliases()
+    .then((data) => {
+      data.should.be.an('array');
+      done();
+    }).catch((err) => {
+      done(new Error(err.message));
+    });
+  });
+
+  it('should retrieve aliases via callback', (done) => {
+    now.getAliases((err, data) => {
+      if (err) return done(new Error(err.message));
+      data.should.be.an('array');
+      return done();
+    });
+  });
+
+  it('should retrieve aliases from deployment', (done) => {
+    now.getAliases(instanceId)
+    .then((data) => {
+      data.should.be.an('array');
+      data[0].uid.should.equal(aliasId);
+      done();
+    }).catch((err) => {
+      done(new Error(err.message));
+    });
+  });
+
+  it('should remove alias', (done) => {
+    now.deleteAlias(aliasId)
+    .then((data) => {
+      data.should.be.an('object');
+      data.status.should.equal('SUCCESS');
 
       done();
     }).catch((err) => {

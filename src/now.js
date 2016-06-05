@@ -17,6 +17,10 @@ const ERROR = {
     code: 'missing_package',
     message: 'Missing `package` object in body',
   },
+  MISSING_ALIAS: {
+    code: 'missing_body',
+    message: 'Missing `alias` parameter',
+  },
 };
 
 /**
@@ -136,7 +140,7 @@ Now.prototype = {
    * Returns an array with the file structure.
    * @return {Promise}
    * @param  {String} id     ID of deployment
-   * @param  {Function} [callback]     Callback will be called with `(err, deployment)`
+   * @param  {Function} [callback]     Callback will be called with `(err, fileStructure)`
    * @see https://zeit.co/api#file-structure-endpoint
    */
   getFiles: function getFiles(id, callback) {
@@ -147,12 +151,13 @@ Now.prototype = {
       method: 'get',
     }, callback);
   },
+
   /**
    * Returns the content of a file.
    * @return {Promise}
    * @param  {String} id     ID of deployment
    * @param  {String} fileId     ID of the file
-   * @param  {Function} [callback]     Callback will be called with `(err, deployment)`
+   * @param  {Function} [callback]     Callback will be called with `(err, file)`
    * @see https://zeit.co/api#file--endpoint
    */
   getFile: function getFile(id, fileId, callback) {
@@ -162,6 +167,63 @@ Now.prototype = {
     return this.handleRequest({
       url: `/deployments/${id}/files/${fileId}`,
       method: 'get',
+    }, callback);
+  },
+
+  /**
+   * Returns an array with all aliases.
+   * @return {Promise}
+   * @param  {String|Function} [id OR callback]     ID of deployment or callback
+   * @param  {Function} [callback]     Callback will be called with `(err, aliases)`
+   * @see https://zeit.co/api#user-aliases
+   */
+  getAliases: function getAliases(id, callback) {
+    let url = '/aliases';
+    let _callback = callback; /* eslint no-underscore-dangle: 0 */
+
+    if (typeof id === 'function') {
+      _callback = id;
+    } else if (typeof id === 'string') {
+      url = `/deployments/${id}/aliases`;
+    }
+    return this.handleRequest({
+      url,
+      method: 'get',
+    }, _callback, 'aliases');
+  },
+
+  /**
+   * Creates a new alias for the given deployment.
+   * @return {Promise}
+   * @param  {String} id     ID of deployment
+   * @param  {String} alias     Hostname or custom url for the alias
+   * @param  {Function} [callback]     Callback will be called with `(err, data)`
+   * @see https://zeit.co/api#create-alias
+   */
+  createAlias: function createAlias(id, alias, callback) {
+    if (!id) return this.handleError(ERROR.MISSING_ID, callback);
+    if (!alias) return this.handleError(ERROR.MISSING_ALIAS, callback);
+
+    return this.handleRequest({
+      url: `/deployments/${id}/aliases`,
+      method: 'post',
+      data: { alias },
+    }, callback);
+  },
+
+  /**
+   * Deletes a alias and returns a status.
+   * @return {Promise}
+   * @param  {String} id     ID of alias
+   * @param  {Function} [callback]     Callback will be called with `(err, status)`
+   * @see https://zeit.co/api#delete-user-aliases
+   */
+  deleteAlias: function deleteAlias(id, callback) {
+    if (!id) return this.handleError(ERROR.MISSING_ID, callback);
+
+    return this.handleRequest({
+      url: `/aliases/${id}`,
+      method: 'delete',
     }, callback);
   },
 };
