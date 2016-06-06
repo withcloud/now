@@ -2,7 +2,7 @@
 
 # 𝚫 now API
 
-Node.js module to interact with official [𝚫 now API](https://zeit.co/api). You need to provide your API token, which you can find in `~/.now.json`.
+Node.js module to interact with the official [𝚫 now API](https://zeit.co/api). You need to provide your API token, which you can find in `~/.now.json`.
 
 
 ```sh
@@ -147,7 +147,7 @@ Returns an array with all aliases.
 <a name="Now+createAlias"></a>
 
 ### now.createAlias(id, alias, [callback]) ⇒ <code>Promise</code>
-Creates a new alias for the given deployment.
+Creates an alias for the given deployment.
 
 **Kind**: instance method of <code>[Now](#Now)</code>  
 **See**: https://zeit.co/api#create-alias  
@@ -161,7 +161,7 @@ Creates a new alias for the given deployment.
 <a name="Now+deleteAlias"></a>
 
 ### now.deleteAlias(id, [callback]) ⇒ <code>Promise</code>
-Deletes a alias and returns a status.
+Deletes an alias and returns a status.
 
 **Kind**: instance method of <code>[Now](#Now)</code>  
 **See**: https://zeit.co/api#delete-user-aliases  

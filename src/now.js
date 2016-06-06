@@ -193,7 +193,7 @@ Now.prototype = {
   },
 
   /**
-   * Creates a new alias for the given deployment.
+   * Creates an alias for the given deployment.
    * @return {Promise}
    * @param  {String} id     ID of deployment
    * @param  {String} alias     Hostname or custom url for the alias
@@ -212,7 +212,7 @@ Now.prototype = {
   },
 
   /**
-   * Deletes a alias and returns a status.
+   * Deletes an alias and returns a status.
    * @return {Promise}
    * @param  {String} id     ID of alias
    * @param  {Function} [callback]     Callback will be called with `(err, status)`
