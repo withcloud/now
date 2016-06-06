@@ -47,7 +47,7 @@ Now.prototype = {
   },
 
   // Handles errors with Promise and callback support
-  handleError: function handleCallback(err, callback) {
+  handleError: function handleError(err, callback) {
     return new Promise((resolve, reject) => {
       reject(err);
       this.handleCallback(callback, err);
