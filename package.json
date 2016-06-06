@@ -1,8 +1,8 @@
 {
   "name": "now-api",
   "version": "0.2.0",
-  "description": "𝚫 now API",
-  "main": "./lib/telegram.js",
+  "description": "Node.js wrapper for the 𝚫 now API",
+  "main": "./lib/now.js",
   "scripts": {
     "prepublish": "./node_modules/.bin/babel -d ./lib src && npm run gen-doc",
     "eslint": "./node_modules/.bin/eslint ./src",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/TimoLins/now-api"
+    "url": "https://github.com/timolins/now-api"
   },
   "keywords": [
     "now",
