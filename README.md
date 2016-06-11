@@ -1,6 +1,4 @@
-[![Build Status](https://travis-ci.org/timolins/now-api.svg)](https://travis-ci.org/timolins/now-api)
-
-# 𝚫 now API
+# 𝚫 now API [![Build Status](https://travis-ci.org/timolins/now-api.svg)](https://travis-ci.org/timolins/now-api)
 
 Node.js module to interact with the official [𝚫 now API](https://zeit.co/api). You need to provide your API token, which you can find in `~/.now.json`.
 
