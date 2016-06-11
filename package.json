@@ -10,6 +10,16 @@
     "test": "./node_modules/.bin/mocha test/index.js --compilers js:babel-register"
   },
   "repository": "timolins/now-api",
+  "eslintConfig": {
+    "parser": "babel-eslint",
+    "extends": "airbnb",
+    "plugins": [
+      "mocha"
+    ],
+    "env": {
+      "mocha": true
+    }
+  },
   "keywords": [
     "now",
     "api",
