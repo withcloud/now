@@ -9,6 +9,9 @@
     "gen-doc": "./node_modules/.bin/jsdoc2md --src src/now.js -t README.hbs > README.md",
     "test": "./node_modules/.bin/mocha test/index.js --compilers js:babel-register"
   },
+  "files": [
+    "lib"
+  ],
   "repository": "timolins/now-api",
   "eslintConfig": {
     "parser": "babel-eslint",
