@@ -2,16 +2,26 @@
   "name": "now-api",
   "version": "0.2.0",
   "description": "Node.js wrapper for the 𝚫 now API",
-  "main": "./lib/now.js",
+  "main": "./dist/now.js",
   "scripts": {
-    "prepublish": "./node_modules/.bin/babel -d ./lib src && npm run gen-doc",
+    "prepublish": "./node_modules/.bin/babel -d ./dist src && npm run gen-doc",
     "eslint": "./node_modules/.bin/eslint ./src",
     "gen-doc": "./node_modules/.bin/jsdoc2md --src src/now.js -t README.hbs > README.md",
     "test": "./node_modules/.bin/mocha test/index.js --compilers js:babel-register"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/timolins/now-api"
+  "files": [
+    "dist"
+  ],
+  "repository": "timolins/now-api",
+  "eslintConfig": {
+    "parser": "babel-eslint",
+    "extends": "airbnb",
+    "plugins": [
+      "mocha"
+    ],
+    "env": {
+      "mocha": true
+    }
   },
   "keywords": [
     "now",
@@ -19,6 +29,11 @@
     "zeit",
     "deploy"
   ],
+  "babel": {
+    "presets": [
+      "es2015"
+    ]
+  },
   "author": "Timo Lins <me@timo.sh> (https://timo.sh/)",
   "license": "MIT",
   "devDependencies": {

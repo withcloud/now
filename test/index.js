@@ -1,4 +1,4 @@
-const Now = require('../lib/now');
+const Now = require('../dist/now');
 
 const chai = require('chai');
 chai.should();
