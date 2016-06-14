@@ -13,6 +13,8 @@ var Now = require('now-api');
 
 var now = Now('YOUR TOKEN');
 
+If you don't supply 'YOUR TOKEN', it will be searched for in ~/.now.json
+
 // Supports Promises
 now.getDeployments().then((deployments) => {
     console.log(deployments);

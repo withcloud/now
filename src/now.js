@@ -24,11 +24,20 @@ const ERROR = {
 };
 
 /**
- * Initializes the API.
+ * Initializes the API. Looks for token in ~/.now.json if none is provided.
  * @constructor
- * @param {String} token - Your now API token.
+ * @param {String} [token] - Your now API token.
  */
 function Now(token) {
+  if (!token) {
+    try {
+      token = require(require('path').join(require('os').homedir(), '.now.json')).token
+    } catch (e) {
+      console.error(`Must either supply token argument or hold it in the user's home directory in ".now.json" file.`)
+      console.error(`Error: ${e}`)
+      return
+    }
+  }
   if (!(this instanceof Now)) return new Now(token);
   this.token = token;
   this.axios = axios.create({
