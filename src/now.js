@@ -36,7 +36,7 @@ function _getToken() {
 
   if (!token) {
     try {
-      const configPath = path.join(os.homedir(), '.now.ajson');
+      const configPath = path.join(os.homedir(), '.now.json');
       token = require(configPath).token; // eslint-disable-line global-require
     } catch (e) {
       console.error(`Error: ${e}`);
