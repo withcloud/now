@@ -1,3 +1,6 @@
+const path = require('path');
+const os = require('os');
+
 const axios = require('axios');
 
 const ERROR = {
@@ -24,11 +27,38 @@ const ERROR = {
 };
 
 /**
- * Initializes the API.
- * @constructor
- * @param {String} token - Your now API token.
+ * Tries to obtain the API token and returns it.
+ * If NOW_TOKEN isn't defined, it will search in the user's home directory
+ * @return {String} – now API Token
  */
-function Now(token) {
+function _getToken() {
+  let token = process.env.NOW_TOKEN;
+
+  if (!token) {
+    try {
+      const configPath = path.join(os.homedir(), '.now.ajson');
+      token = require(configPath).token; // eslint-disable-line global-require
+    } catch (e) {
+      console.error(`Error: ${e}`);
+    }
+  }
+  return token;
+}
+
+
+/**
+ * Initializes the API. Looks for token in ~/.now.json if none is provided.
+ * @constructor
+ * @param {String} [token] - Your now API token.
+ */
+function Now(token = _getToken()) {
+  if (!token) {
+    return console.error(
+      'No token found! ' +
+      'Supply it as argument or use the NOW_TOKEN env variable. ' +
+      '".now.json" will be used, if it\'s found in your home directory.'
+    );
+  }
   if (!(this instanceof Now)) return new Now(token);
   this.token = token;
   this.axios = axios.create({
