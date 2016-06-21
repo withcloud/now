@@ -1,6 +1,10 @@
 # 𝚫 now API [![Build Status](https://travis-ci.org/timolins/now-api.svg)](https://travis-ci.org/timolins/now-api)
 
-Node.js module to interact with the official [𝚫 now API](https://zeit.co/api). You need to provide your API token, which you can find in `~/.now.json`.
+Node.js module to interact with the official [𝚫 now API](https://zeit.co/api).
+
+You need to provide your API token, which you can obtain [here](https://zeit.co/account#api-tokens).
+It is possible to pass it as a parameter or with the `NOW_TOKEN` environment variable.
+When no token is given, it will use the one contained in your `.now.json` file.
 
 ```sh
 npm install --save now-api
@@ -32,7 +36,7 @@ now.getDeployments(function(err, deployments) {
 **Kind**: global class  
 
 * [Now](#Now)
-    * [new Now(token)](#new_Now_new)
+    * [new Now([token])](#new_Now_new)
     * [.getDeployments([callback])](#Now+getDeployments) ⇒ <code>Promise</code>
     * [.getDeployment(id, [callback])](#Now+getDeployment) ⇒ <code>Promise</code>
     * [.createDeployment(body, [callback])](#Now+createDeployment) ⇒ <code>Promise</code>
@@ -45,13 +49,13 @@ now.getDeployments(function(err, deployments) {
 
 <a name="new_Now_new"></a>
 
-### new Now(token)
-Initializes the API.
+### new Now([token])
+Initializes the API. Looks for token in ~/.now.json if none is provided.
 
 
 | Param | Type | Description |
 | --- | --- | --- |
-| token | <code>String</code> | Your now API token. |
+| [token] | <code>String</code> | Your now API token. |
 
 <a name="Now+getDeployments"></a>
 
