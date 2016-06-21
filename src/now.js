@@ -56,7 +56,7 @@ function Now(token = _getToken()) {
     return console.error(
       'No token found! ' +
       'Supply it as argument or use the NOW_TOKEN env variable. ' +
-      '".now.json" will be used, if it\'s found in your home directory.'
+      '"~/.now.json" will be used, if it\'s found in your home directory.'
     );
   }
   if (!(this instanceof Now)) return new Now(token);

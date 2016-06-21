@@ -4,7 +4,7 @@ Node.js module to interact with the official [𝚫 now API](https://zeit.co/api)
 
 You need to provide your API token, which you can obtain [here](https://zeit.co/account#api-tokens).
 It is possible to pass it as a parameter or with the `NOW_TOKEN` environment variable.
-When no token is given, it will use the one contained in your `.now.json` file.
+When no token is given, it will use the one contained in your `~/.now.json` file.
 
 ```sh
 npm install --save now-api
