@@ -1,4 +1,4 @@
-# 𝚫 now API [![Build Status](https://travis-ci.org/timolins/now-api.svg)](https://travis-ci.org/timolins/now-api)
+# 𝚫 now API [![Build Status](https://travis-ci.org/timolins/now-api.svg?branch=master)](https://travis-ci.org/timolins/now-api)
 
 Node.js module to interact with the official [𝚫 now API](https://zeit.co/api).
 
@@ -26,7 +26,7 @@ now.getDeployments().then((deployments) => {
 
 // Or go old-school with callbacks
 now.getDeployments(function(err, deployments) {
-    if (err) throw err;
+    if (err) return console.error(err);
     console.log(deployments);
 });
 ```
