@@ -1,4 +1,4 @@
-# 𝚫 now API [![Build Status](https://travis-ci.org/timolins/now-api.svg?branch=master)](https://travis-ci.org/timolins/now-api)
+# 𝚫 now API [![Build Status](https://travis-ci.org/zeit/now-api.svg?branch=master)](https://travis-ci.org/zeit/now-api)
 
 Node.js module to interact with the official [𝚫 now API](https://zeit.co/api).
 
@@ -174,4 +174,3 @@ Deletes an alias and returns a status.
 | --- | --- | --- |
 | id | <code>String</code> | ID of alias |
 | [callback] | <code>function</code> | Callback will be called with `(err, status)` |
-
