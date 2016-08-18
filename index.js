@@ -1,1 +1,1 @@
-module.exports = require('./dist/now');
+module.exports = require('./dist/now')

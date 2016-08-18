@@ -1,30 +1,30 @@
-const path = require('path');
-const os = require('os');
+const path = require('path')
+const os = require('os')
 
-const axios = require('axios');
+const axios = require('axios')
 
 const ERROR = {
   MISSING_ID: {
     code: 'missing_id',
-    message: 'Missing `id` parameter',
+    message: 'Missing `id` parameter'
   },
   MISSING_FILE_ID: {
     code: 'missing_file_id',
-    message: 'Missing `fileId` parameter',
+    message: 'Missing `fileId` parameter'
   },
   MISSING_BODY: {
     code: 'missing_body',
-    message: 'Missing `body` parameter',
+    message: 'Missing `body` parameter'
   },
   MISSING_PACKAGE: {
     code: 'missing_package',
-    message: 'Missing `package` object in body',
+    message: 'Missing `package` object in body'
   },
   MISSING_ALIAS: {
     code: 'missing_body',
-    message: 'Missing `alias` parameter',
-  },
-};
+    message: 'Missing `alias` parameter'
+  }
+}
 
 /**
  * Tries to obtain the API token and returns it.
@@ -32,19 +32,19 @@ const ERROR = {
  * @return {String} – now API Token
  */
 function _getToken() {
-  let token = process.env.NOW_TOKEN;
+  let token = process.env.NOW_TOKEN
 
   if (!token) {
     try {
-      const configPath = path.join(os.homedir(), '.now.json');
-      token = require(configPath).token; // eslint-disable-line global-require
-    } catch (e) {
-      console.error(`Error: ${e}`);
+      const configPath = path.join(os.homedir(), '.now.json')
+      token = require(configPath).token // eslint-disable-line global-require
+    } catch (err) {
+      console.error(`Error: ${err}`)
     }
   }
-  return token;
-}
 
+  return token
+}
 
 /**
  * Initializes the API. Looks for token in ~/.now.json if none is provided.
@@ -57,48 +57,56 @@ function Now(token = _getToken()) {
       'No token found! ' +
       'Supply it as argument or use the NOW_TOKEN env variable. ' +
       '"~/.now.json" will be used, if it\'s found in your home directory.'
-    );
+    )
   }
-  if (!(this instanceof Now)) return new Now(token);
-  this.token = token;
+
+  if (!(this instanceof Now)) {
+    return new Now(token)
+  }
+
+  this.token = token
+
   this.axios = axios.create({
     baseURL: 'https://api.zeit.co/now',
     timeout: 5000,
-    headers: { Authorization: `Bearer ${token}` },
-  });
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
 }
 
 Now.prototype = {
   // Checks if callback is present and fires it
   handleCallback: function handleCallback(callback, err, data) {
     if (typeof callback === 'function') {
-      callback(err, data);
+      callback(err, data)
     }
   },
 
   // Handles errors with Promise and callback support
   handleError: function handleError(err, callback) {
     return new Promise((resolve, reject) => {
-      reject(err);
-      this.handleCallback(callback, err);
-    });
+      reject(err)
+      this.handleCallback(callback, err)
+    })
   },
 
   // Processes requests
   handleRequest: function handleRequest(config, callback, selector) {
     return new Promise((resolve, reject) => {
       this.axios.request(config)
-        .then((res) => {
-          const data = selector ? res.data[selector] : res.data;
-          resolve(data);
-          this.handleCallback(callback, undefined, data);
+        .then(res => {
+          const data = selector ? res.data[selector] : res.data
+          resolve(data)
+          this.handleCallback(callback, undefined, data)
         })
-        .catch((err) => {
-          const errData = err.data.err ? err.data.err : err.data;
-          reject(errData);
-          this.handleCallback(callback, errData);
-        });
-    });
+
+        .catch(err => {
+          const errData = err.data.err ? err.data.err : err.data
+          reject(errData)
+          this.handleCallback(callback, errData)
+        })
+    })
   },
 
   /**
@@ -110,8 +118,8 @@ Now.prototype = {
   getDeployments: function getDeployments(callback) {
     return this.handleRequest({
       url: '/deployments',
-      method: 'get',
-    }, callback, 'deployments');
+      method: 'get'
+    }, callback, 'deployments')
   },
 
   /**
@@ -122,12 +130,14 @@ Now.prototype = {
    * @see https://zeit.co/api#get-endpoint
    */
   getDeployment: function getDeployment(id, callback) {
-    if (!id) return this.handleError(ERROR.MISSING_ID, callback);
+    if (!id) {
+      return this.handleError(ERROR.MISSING_ID, callback)
+    }
 
     return this.handleRequest({
       url: `/deployments/${id}`,
-      method: 'get',
-    }, callback);
+      method: 'get'
+    }, callback)
   },
 
   /**
@@ -140,14 +150,19 @@ Now.prototype = {
    * @see https://zeit.co/api#instant-endpoint
    */
   createDeployment: function createDeployment(body, callback) {
-    if (!body) return this.handleError(ERROR.MISSING_BODY, callback);
-    if (!body.package) return this.handleError(ERROR.MISSING_PACKAGE, callback);
+    if (!body) {
+      return this.handleError(ERROR.MISSING_BODY, callback)
+    }
+
+    if (!body.package) {
+      return this.handleError(ERROR.MISSING_PACKAGE, callback)
+    }
 
     return this.handleRequest({
       url: '/deployments',
       method: 'post',
-      data: body,
-    }, callback);
+      data: body
+    }, callback)
   },
 
   /**
@@ -158,12 +173,14 @@ Now.prototype = {
    * @see https://zeit.co/api#rm-endpoint
    */
   deleteDeployment: function deleteDeployment(id, callback) {
-    if (!id) return this.handleError(ERROR.MISSING_ID, callback);
+    if (!id) {
+      return this.handleError(ERROR.MISSING_ID, callback)
+    }
 
     return this.handleRequest({
       url: `/deployments/${id}`,
-      method: 'delete',
-    }, callback);
+      method: 'delete'
+    }, callback)
   },
 
   /**
@@ -174,12 +191,14 @@ Now.prototype = {
    * @see https://zeit.co/api#file-structure-endpoint
    */
   getFiles: function getFiles(id, callback) {
-    if (!id) return this.handleError(ERROR.MISSING_ID, callback);
+    if (!id) {
+      return this.handleError(ERROR.MISSING_ID, callback)
+    }
 
     return this.handleRequest({
       url: `/deployments/${id}/files`,
-      method: 'get',
-    }, callback);
+      method: 'get'
+    }, callback)
   },
 
   /**
@@ -191,13 +210,18 @@ Now.prototype = {
    * @see https://zeit.co/api#file--endpoint
    */
   getFile: function getFile(id, fileId, callback) {
-    if (!id) return this.handleError(ERROR.MISSING_ID, callback);
-    if (!fileId) return this.handleError(ERROR.MISSING_FILE_ID, callback);
+    if (!id) {
+      return this.handleError(ERROR.MISSING_ID, callback)
+    }
+
+    if (!fileId) {
+      return this.handleError(ERROR.MISSING_FILE_ID, callback)
+    }
 
     return this.handleRequest({
       url: `/deployments/${id}/files/${fileId}`,
-      method: 'get',
-    }, callback);
+      method: 'get'
+    }, callback)
   },
 
   /**
@@ -208,18 +232,19 @@ Now.prototype = {
    * @see https://zeit.co/api#user-aliases
    */
   getAliases: function getAliases(id, callback) {
-    let url = '/aliases';
-    let _callback = callback; /* eslint no-underscore-dangle: 0 */
+    let url = '/aliases'
+    let _callback = callback /* eslint no-underscore-dangle: 0 */
 
     if (typeof id === 'function') {
-      _callback = id;
+      _callback = id
     } else if (typeof id === 'string') {
-      url = `/deployments/${id}/aliases`;
+      url = `/deployments/${id}/aliases`
     }
+
     return this.handleRequest({
       url,
-      method: 'get',
-    }, _callback, 'aliases');
+      method: 'get'
+    }, _callback, 'aliases')
   },
 
   /**
@@ -231,14 +256,21 @@ Now.prototype = {
    * @see https://zeit.co/api#create-alias
    */
   createAlias: function createAlias(id, alias, callback) {
-    if (!id) return this.handleError(ERROR.MISSING_ID, callback);
-    if (!alias) return this.handleError(ERROR.MISSING_ALIAS, callback);
+    if (!id) {
+      return this.handleError(ERROR.MISSING_ID, callback)
+    }
+
+    if (!alias) {
+      return this.handleError(ERROR.MISSING_ALIAS, callback)
+    }
 
     return this.handleRequest({
       url: `/deployments/${id}/aliases`,
       method: 'post',
-      data: { alias },
-    }, callback);
+      data: {
+        alias
+      }
+    }, callback)
   },
 
   /**
@@ -249,13 +281,15 @@ Now.prototype = {
    * @see https://zeit.co/api#delete-user-aliases
    */
   deleteAlias: function deleteAlias(id, callback) {
-    if (!id) return this.handleError(ERROR.MISSING_ID, callback);
+    if (!id) {
+      return this.handleError(ERROR.MISSING_ID, callback)
+    }
 
     return this.handleRequest({
       url: `/aliases/${id}`,
-      method: 'delete',
-    }, callback);
-  },
-};
+      method: 'delete'
+    }, callback)
+  }
+}
 
-module.exports = Now;
+module.exports = Now

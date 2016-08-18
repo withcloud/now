@@ -174,3 +174,4 @@ Deletes an alias and returns a status.
 | --- | --- | --- |
 | id | <code>String</code> | ID of alias |
 | [callback] | <code>function</code> | Callback will be called with `(err, status)` |
+
