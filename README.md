@@ -1,4 +1,4 @@
-# 𝚫 now API [![Build Status](https://travis-ci.org/zeit/now-api.svg?branch=master)](https://travis-ci.org/zeit/now-api)
+# 𝚫 now client [![Build Status](https://travis-ci.org/zeit/now-client.svg?branch=master)](https://travis-ci.org/zeit/now-client)
 
 Node.js module to interact with the official [𝚫 now API](https://zeit.co/api).
 
@@ -7,15 +7,15 @@ It is possible to pass it as a parameter or with the `NOW_TOKEN` environment var
 When no token is given, it will use the one contained in your `~/.now.json` file.
 
 ```sh
-npm install --save now-api
+npm install --save now-client
 ```
 
 ## Example
 
 ```js
-var Now = require('now-api');
+const Now = require('now-client');
 
-var now = Now('YOUR TOKEN');
+const now = Now('YOUR TOKEN');
 
 // Supports Promises
 now.getDeployments().then((deployments) => {

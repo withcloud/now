@@ -1,7 +1,7 @@
 {
-  "name": "now-api",
+  "name": "now-client",
   "version": "0.3.0",
-  "description": "Node.js wrapper for the 𝚫 now API",
+  "description": "Node.js wrapper for the 𝚫 now client",
   "main": "./dist/now.js",
   "scripts": {
     "prepublish": "babel -d ./dist src && npm run gen-doc",
@@ -11,7 +11,7 @@
   "files": [
     "dist"
   ],
-  "repository": "zeit/now-api",
+  "repository": "zeit/now-client",
   "xo": {
     "esnext": true,
     "space": true,
