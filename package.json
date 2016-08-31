@@ -35,7 +35,7 @@
       "es2015"
     ]
   },
-  "author": "Timo Lins <me@timo.sh> (https://timo.sh/)",
+  "author": "Timo Lins <me@timo.sh> (https://timo.sh)",
   "license": "MIT",
   "devDependencies": {
     "babel-cli": "^6.10.1",

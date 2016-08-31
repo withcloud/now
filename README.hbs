@@ -13,22 +13,25 @@ npm install --save now-client
 ## Example
 
 ```js
-const Now = require('now-client');
-
-const now = Now('YOUR TOKEN');
+const Now = require('now-client')
+const now = Now('YOUR TOKEN')
 
 // Supports Promises
-now.getDeployments().then((deployments) => {
-    console.log(deployments);
-}).catch((err) => {
-    console.error(err);
-});
+now.getDeployments().then(deployments => {
+  console.log(deployments)
+}).catch(err => {
+  console.error(err)
+})
 
 // Or go old-school with callbacks
-now.getDeployments(function(err, deployments) {
-    if (err) return console.error(err);
-    console.log(deployments);
-});
+now.getDeployments((err, deployments) => {
+  if (err) {
+    console.error(err)
+    return
+  }
+
+  console.log(deployments)
+})
 ```
 
 ## API Reference
