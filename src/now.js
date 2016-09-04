@@ -102,7 +102,14 @@ Now.prototype = {
         })
 
         .catch(err => {
-          const errData = err.data.err ? err.data.err : err.data
+          let errData
+          if (err.data && err.data.err) {
+            errData = err.data.err
+          } else if (err.data) {
+            errData = err.data
+          } else {
+            errData = err.toString()
+          }
           reject(errData)
           this.handleCallback(callback, errData)
         })
