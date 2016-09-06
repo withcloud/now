@@ -76,7 +76,7 @@ function Now(token = _getToken()) {
 
   this.axios = axios.create({
     baseURL: 'https://api.zeit.co/now',
-    timeout: 5000,
+    timeout: 30000,
     headers: {
       Authorization: `Bearer ${token}`
     }
