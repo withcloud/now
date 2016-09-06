@@ -164,4 +164,45 @@ describe('Now', function tests() {
       done(new Error(err.message))
     })
   })
+
+  it('should create secret', done => {
+    now.createSecret('test-secret', 'secret')
+    .then(data => {
+      data.uid.should.be.a('string')
+      done()
+    }).catch(err => {
+      done(new Error(err.message))
+    })
+  })
+
+  it('should retrieve all secrets', done => {
+    now.getSecrets()
+    .then(data => {
+      data.should.be.an('array')
+      done()
+    }).catch(err => {
+      done(new Error(err.message))
+    })
+  })
+
+  it('should rename secret', done => {
+    now.renameSecret('test-secret', 'test-secret-renamed')
+    .then(data => {
+      data.uid.should.be.a('string')
+      data.oldName.should.equal('test-secret')
+      done()
+    }).catch(err => {
+      done(new Error(err.message))
+    })
+  })
+
+  it('should remove secret', done => {
+    now.deleteSecret('test-secret-renamed')
+    .then(data => {
+      data.uid.should.be.a('string')
+      done()
+    }).catch(err => {
+      done(new Error(err.message))
+    })
+  })
 })

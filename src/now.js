@@ -23,6 +23,14 @@ const ERROR = {
   MISSING_ALIAS: {
     code: 'missing_body',
     message: 'Missing `alias` parameter'
+  },
+  MISSING_NAME: {
+    code: 'missing_name',
+    message: 'Missing `name` parameter'
+  },
+  MISSING_VALUE: {
+    code: 'missing_value',
+    message: 'Missing `value` parameter'
   }
 }
 
@@ -202,11 +210,11 @@ Now.prototype = {
   },
 
   /**
-   * Returns the content of a file.
+   * Returns the content of a file either as String or Object, depending on the filetype.
    * @return {Promise}
    * @param  {String} id     ID of deployment
    * @param  {String} fileId     ID of the file
-   * @param  {Function} [callback]     Callback will be called with `(err, file)`
+   * @param  {Function} [callback]     Callback will be called with `(err, fileContent)`
    * @see https://zeit.co/api#file--endpoint
    */
   getFile: function getFile(id, fileId, callback) {
@@ -287,6 +295,91 @@ Now.prototype = {
 
     return this.handleRequest({
       url: `/aliases/${id}`,
+      method: 'delete'
+    }, callback)
+  },
+
+  /**
+   * Returns an array with all secrets.
+   * @return {Promise}
+   * @param  {String|Function} [id OR callback]     ID of deployment or callback
+   * @param  {Function} [callback]     Callback will be called with `(err, secrets)`
+   * @see https://zeit.co/api#get-now-secrets
+   */
+  getSecrets: function getSecrets(callback) {
+    return this.handleRequest({
+      url: '/secrets',
+      method: 'get'
+    }, callback, 'secrets')
+  },
+
+  /**
+   * Creates a secret and returns its ID.
+   * @return {Promise}
+   * @param  {String} name     name for the secret
+   * @param  {String} value     value for the secret
+   * @param  {Function} [callback]     Callback will be called with `(err, data)`
+   * @see https://zeit.co/api#post-now-secrets
+   */
+  createSecret: function createSecret(name, value, callback) {
+    if (!name) {
+      return this.handleError(ERROR.MISSING_NAME, callback)
+    }
+
+    if (!value) {
+      return this.handleError(ERROR.MISSING_VALUE, callback)
+    }
+
+    return this.handleRequest({
+      url: '/secrets',
+      method: 'post',
+      data: {
+        name,
+        value
+      }
+    }, callback)
+  },
+
+  /**
+   * Changes the name of the given secret and returns its ID and name.
+   * @return {Promise}
+   * @param  {String} id     id or name of the secret
+   * @param  {String} name     new name for the secret
+   * @param  {Function} [callback]     Callback will be called with `(err, data)`
+   * @see https://zeit.co/api#patch-now-secrets
+   */
+  renameSecret: function renameSecret(id, name, callback) {
+    if (!id) {
+      return this.handleError(ERROR.MISSING_ID, callback)
+    }
+
+    if (!name) {
+      return this.handleError(ERROR.MISSING_NAME, callback)
+    }
+
+    return this.handleRequest({
+      url: `/secrets/${id}`,
+      method: 'patch',
+      data: {
+        name
+      }
+    }, callback)
+  },
+
+  /**
+   * Deletes a secret and returns its ID.
+   * @return {Promise}
+   * @param  {String} id     ID or name of the secret
+   * @param  {Function} [callback]     Callback will be called with `(err, status)`
+   * @see https://zeit.co/api#delete-user-aliases
+   */
+  deleteSecret: function deleteSecret(id, callback) {
+    if (!id) {
+      return this.handleError(ERROR.MISSING_ID, callback)
+    }
+
+    return this.handleRequest({
+      url: `/secrets/${id}`,
       method: 'delete'
     }, callback)
   }
