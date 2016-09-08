@@ -49,6 +49,10 @@ now.getDeployments((err, deployments) => {
     * [.getAliases([id OR callback], [callback])](#Now+getAliases) ⇒ <code>Promise</code>
     * [.createAlias(id, alias, [callback])](#Now+createAlias) ⇒ <code>Promise</code>
     * [.deleteAlias(id, [callback])](#Now+deleteAlias) ⇒ <code>Promise</code>
+    * [.getSecrets([id OR callback], [callback])](#Now+getSecrets) ⇒ <code>Promise</code>
+    * [.createSecret(name, value, [callback])](#Now+createSecret) ⇒ <code>Promise</code>
+    * [.renameSecret(id, name, [callback])](#Now+renameSecret) ⇒ <code>Promise</code>
+    * [.deleteSecret(id, [callback])](#Now+deleteSecret) ⇒ <code>Promise</code>
 
 <a name="new_Now_new"></a>
 
@@ -127,7 +131,7 @@ Returns an array with the file structure.
 <a name="Now+getFile"></a>
 
 ### now.getFile(id, fileId, [callback]) ⇒ <code>Promise</code>
-Returns the content of a file.
+Returns the content of a file either as string or object, depending on the filetype.
 
 **Kind**: instance method of <code>[Now](#Now)</code>  
 **See**: https://zeit.co/api#file--endpoint  
@@ -136,7 +140,7 @@ Returns the content of a file.
 | --- | --- | --- |
 | id | <code>String</code> | ID of deployment |
 | fileId | <code>String</code> | ID of the file |
-| [callback] | <code>function</code> | Callback will be called with `(err, file)` |
+| [callback] | <code>function</code> | Callback will be called with `(err, fileContent)` |
 
 <a name="Now+getAliases"></a>
 
@@ -176,5 +180,59 @@ Deletes an alias and returns a status.
 | Param | Type | Description |
 | --- | --- | --- |
 | id | <code>String</code> | ID of alias |
+| [callback] | <code>function</code> | Callback will be called with `(err, status)` |
+
+<a name="Now+getSecrets"></a>
+
+### now.getSecrets([id OR callback], [callback]) ⇒ <code>Promise</code>
+Returns an array with all secrets.
+
+**Kind**: instance method of <code>[Now](#Now)</code>  
+**See**: https://zeit.co/api#get-now-secrets  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| [id OR callback] | <code>String</code> &#124; <code>function</code> | ID of deployment or callback |
+| [callback] | <code>function</code> | Callback will be called with `(err, secrets)` |
+
+<a name="Now+createSecret"></a>
+
+### now.createSecret(name, value, [callback]) ⇒ <code>Promise</code>
+Creates a secret and returns its ID.
+
+**Kind**: instance method of <code>[Now](#Now)</code>  
+**See**: https://zeit.co/api#post-now-secrets  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| name | <code>String</code> | name for the secret |
+| value | <code>String</code> | value for the secret |
+| [callback] | <code>function</code> | Callback will be called with `(err, data)` |
+
+<a name="Now+renameSecret"></a>
+
+### now.renameSecret(id, name, [callback]) ⇒ <code>Promise</code>
+Changes the name of the given secret and returns its ID and name.
+
+**Kind**: instance method of <code>[Now](#Now)</code>  
+**See**: https://zeit.co/api#patch-now-secrets  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| id | <code>String</code> | id or name of the secret |
+| name | <code>String</code> | new name for the secret |
+| [callback] | <code>function</code> | Callback will be called with `(err, data)` |
+
+<a name="Now+deleteSecret"></a>
+
+### now.deleteSecret(id, [callback]) ⇒ <code>Promise</code>
+Deletes a secret and returns its ID.
+
+**Kind**: instance method of <code>[Now](#Now)</code>  
+**See**: https://zeit.co/api#delete-user-aliases  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| id | <code>String</code> | ID or name of the secret |
 | [callback] | <code>function</code> | Callback will be called with `(err, status)` |
 

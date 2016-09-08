@@ -48,13 +48,14 @@ describe('Now', function tests() {
     })
   })
 
-  it('should return error on timeout (and other network errors)', () => {
+  it('should return error on timeout (and other network errors)', done => {
     const nowWithShortTimeout = new Now(TOKEN)
     nowWithShortTimeout.axios.defaults.timeout = 1
-    return nowWithShortTimeout.getDeployments().then(() => {
+    nowWithShortTimeout.getDeployments().then(() => {
       throw new Error('promise should be rejected due to timeout')
     }).catch(err => {
       err.should.be.a('string')
+      done()
     })
   })
 

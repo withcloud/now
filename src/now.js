@@ -217,7 +217,7 @@ Now.prototype = {
   },
 
   /**
-   * Returns the content of a file either as String or Object, depending on the filetype.
+   * Returns the content of a file either as string or object, depending on the filetype.
    * @return {Promise}
    * @param  {String} id     ID of deployment
    * @param  {String} fileId     ID of the file
