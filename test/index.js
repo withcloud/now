@@ -1,7 +1,7 @@
 const chai = require('chai')
 const Now = require('../dist/now')
 
-chai.should()
+const should = chai.should()
 
 const TOKEN = process.env.TEST_NOW_TOKEN
 
@@ -10,7 +10,7 @@ if (!TOKEN) {
 }
 
 describe('Now', function tests() {
-  this.timeout(60000) // Wait 1 minute, since deleting a deployment takes forever.
+  this.timeout(60000)
 
   const now = new Now(TOKEN)
 
@@ -34,7 +34,7 @@ describe('Now', function tests() {
       done()
     })
     .catch(err => {
-      done(new Error(err.message))
+      throw new Error(err.message)
     })
   })
 
@@ -44,14 +44,14 @@ describe('Now', function tests() {
       data.should.be.an('array')
       done()
     }).catch(err => {
-      done(new Error(err.message))
+      throw new Error(err.message)
     })
   })
 
   it('should retrieve deployments via callback', done => {
     now.getDeployments((err, data) => {
       if (err) {
-        return done(new Error(err.message))
+        throw new Error(err.message)
       }
 
       data.should.be.an('array')
@@ -65,7 +65,7 @@ describe('Now', function tests() {
       data.should.be.an('object')
       done()
     }).catch(err => {
-      done(new Error(err.message))
+      throw new Error(err.message)
     })
   })
 
@@ -80,18 +80,21 @@ describe('Now', function tests() {
 
       done()
     }).catch(err => {
-      done(new Error(err.message))
+      throw new Error(err.message)
     })
   })
 
   it('should retrieve file content from deployment', done => {
     now.getFile(instanceId, fileId)
     .then(data => {
-      data.should.be.a('string')
+      // It seems like this can return a String or an object, depending on which file you are trying to get.
+      // This will only test if the data is present, without doing any checks with it.
+      // Improvments are welcome!
+      should.exist(data)
 
       done()
     }).catch(err => {
-      done(new Error(err.message))
+      throw new Error(err.message)
     })
   })
 
@@ -104,7 +107,7 @@ describe('Now', function tests() {
       done()
     })
     .catch(err => {
-      done(new Error(err.message))
+      throw new Error(err.message)
     })
   })
 
@@ -114,14 +117,14 @@ describe('Now', function tests() {
       data.should.be.an('array')
       done()
     }).catch(err => {
-      done(new Error(err.message))
+      throw new Error(err.message)
     })
   })
 
   it('should retrieve aliases via callback', done => {
     now.getAliases((err, data) => {
       if (err) {
-        return done(new Error(err.message))
+        throw new Error(err.message)
       }
 
       data.should.be.an('array')
@@ -136,7 +139,7 @@ describe('Now', function tests() {
       data[0].uid.should.equal(aliasId)
       done()
     }).catch(err => {
-      done(new Error(err.message))
+      throw new Error(err.message)
     })
   })
 
@@ -148,7 +151,7 @@ describe('Now', function tests() {
 
       done()
     }).catch(err => {
-      done(new Error(err.message))
+      throw new Error(err.message)
     })
   })
 
@@ -161,7 +164,7 @@ describe('Now', function tests() {
 
       done()
     }).catch(err => {
-      done(new Error(err.message))
+      throw new Error(err.message)
     })
   })
 
@@ -171,7 +174,7 @@ describe('Now', function tests() {
       data.uid.should.be.a('string')
       done()
     }).catch(err => {
-      done(new Error(err.message))
+      throw new Error(err.message)
     })
   })
 
@@ -181,7 +184,7 @@ describe('Now', function tests() {
       data.should.be.an('array')
       done()
     }).catch(err => {
-      done(new Error(err.message))
+      throw new Error(err.message)
     })
   })
 
@@ -192,7 +195,7 @@ describe('Now', function tests() {
       data.oldName.should.equal('test-secret')
       done()
     }).catch(err => {
-      done(new Error(err.message))
+      throw new Error(err.message)
     })
   })
 
@@ -202,7 +205,7 @@ describe('Now', function tests() {
       data.uid.should.be.a('string')
       done()
     }).catch(err => {
-      done(new Error(err.message))
+      throw new Error(err.message)
     })
   })
 })
