@@ -101,7 +101,7 @@ Creates a new deployment and returns its data.
 
 | Param | Type | Description |
 | --- | --- | --- |
-| body | <code>Object</code> | Object a package key (for package.json data). The other keys should represent a file path, with their respective values containing the file contents. |
+| body | <code>Object</code> | The keys should represent a file path, with their respective values containing the file contents. |
 | [callback] | <code>function</code> | Callback will be called with `(err, deployment)` |
 
 <a name="Now+deleteDeployment"></a>

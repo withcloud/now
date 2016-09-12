@@ -16,10 +16,6 @@ const ERROR = {
     code: 'missing_body',
     message: 'Missing `body` parameter'
   },
-  MISSING_PACKAGE: {
-    code: 'missing_package',
-    message: 'Missing `package` object in body'
-  },
   MISSING_ALIAS: {
     code: 'missing_body',
     message: 'Missing `alias` parameter'
@@ -158,8 +154,8 @@ Now.prototype = {
   /**
    * Creates a new deployment and returns its data.
    * @return {Promise}
-   * @param  {Object} body     Object a package key (for package.json data).
-   * The other keys should represent a file path, with their respective values
+   * @param  {Object} body
+   * The keys should represent a file path, with their respective values
    * containing the file contents.
    * @param  {Function} [callback]     Callback will be called with `(err, deployment)`
    * @see https://zeit.co/api#instant-endpoint
@@ -167,10 +163,6 @@ Now.prototype = {
   createDeployment: function createDeployment(body, callback) {
     if (!body) {
       return this.handleError(ERROR.MISSING_BODY, callback)
-    }
-
-    if (!body.package) {
-      return this.handleError(ERROR.MISSING_PACKAGE, callback)
     }
 
     return this.handleRequest({
