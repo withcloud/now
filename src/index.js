@@ -16,6 +16,10 @@ const ERROR = {
     code: 'missing_body',
     message: 'Missing `body` parameter'
   },
+  MISSING_CN: {
+    code: 'missing_cn',
+    message: 'Missing `cn` parameter'
+  },
   MISSING_ALIAS: {
     code: 'missing_body',
     message: 'Missing `alias` parameter'
@@ -228,6 +232,172 @@ Now.prototype = {
     return this.handleRequest({
       url: `/deployments/${id}/files/${fileId}`,
       method: 'get'
+    }, callback)
+  },
+
+  /**
+   * Returns an array with all domain names and related aliases.
+   * @return {Promise}
+   * @param  {Function} [callback]     Callback will be called with `(err, domains)`
+   */
+  getDomains(callback) {
+    return this.handleRequest({
+      url: '/domains',
+      method: 'get'
+    }, callback, 'domains')
+  },
+
+  /**
+   * Adds a new domain and returns its data.
+   * @return {Promise}
+   * @param  {Object} domain           Object with `name` and `isExternalDNS`
+   * If `isExternalDNS` is falsy then an external DNS server should point a
+   * CNAME or an ALIAS  to alias.zeit.co; if `isExternalDNS` is truthy then
+   * zeit.world should be configured as the DNS for the domain.
+   * @param  {Function} [callback]     Callback will be called with `(err, domain)`
+   */
+  addDomain(domain, callback) {
+    if (typeof domain.name !== 'string') {
+      return this.handleError(ERROR.MISSING_NAME, callback)
+    }
+
+    return this.handleRequest({
+      url: '/domains',
+      method: 'post',
+      data: {
+        name: domain.name,
+        isExternal: domain.isExternalDNS
+      }
+    }, callback)
+  },
+
+  /**
+   * Deletes a domain name.
+   * @return {Promise}
+   * @param  {String} name             Domain name
+   * @param  {Function} [callback]     Callback will be called with `(err, deployment)`
+   * @see https://zeit.co/api#rm-endpoint
+   */
+  deleteDomain(name, callback) {
+    if (typeof name !== 'string') {
+      return this.handleError(ERROR.MISSING_NAME, callback)
+    }
+
+    return this.handleRequest({
+      url: `/domains/${name}`,
+      method: 'delete'
+    }, callback)
+  },
+
+  /**
+   * Returns an array of all certificates.
+   * @return {Promise}
+   * @param  {String|Function} [cn OR callback]     Common name or callback
+   * @param  {Function} [callback]     Callback will be called with `(err, certificates)`
+   * @see https://zeit.co/api#user-aliases
+   */
+  getCertificates(cn, callback) {
+    let url = '/certs'
+    let _callback = callback /* eslint no-underscore-dangle: 0 */
+
+    if (typeof cn === 'function') {
+      _callback = cn
+    } else if (typeof cn === 'string') {
+      url = `/certs/${cn}`
+    }
+
+    return this.handleRequest({
+      url,
+      method: 'get'
+    }, _callback, 'certs')
+  },
+
+  /**
+   * Creates a new certificate for a domain registered to the user.
+   * @return {Promise}
+   * @param  {String} cn Common name
+   * @param  {Function} [callback]     Callback will be called with `(err)`
+   */
+  createCertificate(cn, callback) {
+    if (typeof cn !== 'string') {
+      return this.handleError(ERROR.MISSING_CN, cn)
+    }
+
+    return this.handleRequest({
+      url: '/certs',
+      method: 'post',
+      data: {
+        domains: [cn]
+      }
+    }, callback)
+  },
+
+  /**
+   * Renews an existing certificate.
+   * @return {Promise}
+   * @param  {String} cn               Common name
+   * @param  {Function} [callback]     Callback will be called with `(err)`
+   */
+  renewCertificate(cn, callback) {
+    if (typeof cn !== 'string') {
+      return this.handleError(ERROR.MISSING_CN, cn)
+    }
+
+    return this.handleRequest({
+      url: '/certs',
+      method: 'post',
+      data: {
+        domains: [cn],
+        renew: true
+      }
+    }, callback)
+  },
+
+  /**
+   * Replace an existing certificate.
+   * @return {Promise}
+   * @param  {String} cn               Common name
+   * @param  {String} cert             X.509 certificate
+   * @param  {String} key              Private key for the certificate
+   * @param  {String} [ca]             CA certificate chain
+   * @param  {Function} [callback]     Callback will be called with `(err, createdDate)`
+   */
+  replaceCertificate(cn, cert, key, ca, callback) {
+    let _ca = '' /* eslint no-underscore-dangle: 0 */
+    let _callback = callback /* eslint no-underscore-dangle: 0 */
+
+    if (typeof ca === 'function') {
+      _callback = ca
+    } else if (typeof ca === 'string') {
+      _ca = ca
+    }
+
+    return this.handleRequest({
+      url: '/certs',
+      method: 'put',
+      data: {
+        domains: [cn],
+        ca: _ca,
+        cert,
+        key
+      }
+    }, _callback, 'created')
+  },
+
+  /**
+   * Deletes a certificate.
+   * @return {Promise}
+   * @param  {String} cn               Common name
+   * @param  {Function} [callback]     Callback will be called with `(err, {})`
+   */
+  deleteCertificate(cn, callback) {
+    if (typeof cn !== 'string') {
+      return this.handleError(ERROR.MISSING_CN, cn)
+    }
+
+    return this.handleRequest({
+      url: `/certs/${cn}`,
+      method: 'delete'
     }, callback)
   },
 

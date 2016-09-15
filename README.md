@@ -60,6 +60,14 @@ now.getDeployments().then(deployments => {
     * [.deleteDeployment(id, [callback])](#Now+deleteDeployment) ⇒ <code>Promise</code>
     * [.getFiles(id, [callback])](#Now+getFiles) ⇒ <code>Promise</code>
     * [.getFile(id, fileId, [callback])](#Now+getFile) ⇒ <code>Promise</code>
+    * [.getDomains([callback])](#Now+getDomains) ⇒ <code>Promise</code>
+    * [.addDomain(domain, [callback])](#Now+addDomain) ⇒ <code>Promise</code>
+    * [.deleteDomain(name, [callback])](#Now+deleteDomain) ⇒ <code>Promise</code>
+    * [.getCertificates([cn], [callback])](#Now+getCertificates) ⇒ <code>Promise</code>
+    * [.createCertificate(cn, [callback])](#Now+createCertificate) ⇒ <code>Promise</code>
+    * [.renewCertificate(cn, [callback])](#Now+renewCertificate) ⇒ <code>Promise</code>
+    * [.replaceCertificate(cn, cert, key, [ca], [callback])](#Now+replaceCertificate) ⇒ <code>Promise</code>
+    * [.deleteCertificate(cn, [callback])](#Now+deleteCertificate) ⇒ <code>Promise</code>
     * [.getAliases([id OR callback], [callback])](#Now+getAliases) ⇒ <code>Promise</code>
     * [.createAlias(id, alias, [callback])](#Now+createAlias) ⇒ <code>Promise</code>
     * [.deleteAlias(id, [callback])](#Now+deleteAlias) ⇒ <code>Promise</code>
@@ -155,6 +163,113 @@ Returns the content of a file either as string or object, depending on the filet
 | id | <code>String</code> | ID of deployment |
 | fileId | <code>String</code> | ID of the file |
 | [callback] | <code>function</code> | Callback will be called with `(err, fileContent)` |
+
+<a name="Now+getDomains"></a>
+
+## now.getDomains([callback])] ⇒ <code>Promise</code>
+Returns an array with all domain names and related aliases.
+
+**Kind**: instance method of <code>[Now](#Now)</code>
+**See**: https://zeit.co/api#get-domains
+
+| Param | Type | Description |
+| --- | --- | --- |
+| [callback] | <code>function</code> | Callback will be called with `(err, domains)` |
+
+<a name="Now+addDomain"></a>
+
+## now.addDomain(domain, [callback])] ⇒ <code>Promise</code>
+Adds a new domain and returns its data.
+
+**Kind**: instance method of <code>[Now](#Now)</code>
+**See**: https://zeit.co/api#post.domains
+
+| Param | Type | Description |
+| --- | --- | --- |
+| domain | <code>object</code> | An object containing a string `name` and a boolean `isExternalDNS` |
+| [callback] | <code>function</code> | Callback will be called with `(err)` |
+
+<a name="Now+deleteDomain"></a>
+
+## now.deleteDomain(name, [callback])] ⇒ <code>Promise</code>
+Deletes a domain name.
+
+**Kind**: instance method of <code>[Now](#Now)</code>
+**See**: https://zeit.co/api#delete-domains
+
+| Param | Type | Description |
+| --- | --- | --- |
+| name | <code>String</code> | Domain name |
+| [callback] | <code>function</code> | Callback will be called with `(err)` |
+
+<a name="Now+getCertificates"></a>
+Returns an array of all certificates.
+
+## now.getCertificates([cn], [callback])] ⇒ <code>Promise</code>
+Returns an array of all certificates.
+
+**Kind**: instance method of <code>[Now](#Now)</code>
+**See**: https://zeit.co/api#get-certs
+
+| Param | Type | Description |
+| --- | --- | --- |
+| [cn] | <code>String</code> | Common Name |
+| [callback] | <code>function</code> | Callback will be called with `(err, certs)` |
+
+<a name="Now+createCertificate"></a>
+
+## now.createCertificate(cn, [callback])] ⇒ <code>Promise</code>
+Creates a new certificate for a domain registered to the user.
+
+**Kind**: instance method of <code>[Now](#Now)</code>
+**See**: https://zeit.co/api#post-certs
+
+| Param | Type | Description |
+| --- | --- | --- |
+| cn | <code>String</code> | Common Name |
+| [callback] | <code>function</code> | Callback will be called with `(err)` |
+
+<a name="Now+renewCertificate"></a>
+ 
+## now.renewCertificate(cn, [callback])] ⇒ <code>Promise</code>
+Renews an existing certificate.
+
+**Kind**: instance method of <code>[Now](#Now)</code>
+**See**: https://zeit.co/api#post-certs
+
+| Param | Type | Description |
+| --- | --- | --- |
+| cn | <code>String</code> | Common Name |
+| [callback] | <code>function</code> | Callback will be called with `(err)` |
+ 
+<a name="Now+replaceCertificate"></a>
+
+## now.replaceCertificate(cn, cert, key, [ca], [callback])] ⇒ <code>Promise</code>
+Replace an existing certificate.
+
+**Kind**: instance method of <code>[Now](#Now)</code>
+**See**: https://zeit.co/api#put-certs
+
+| Param | Type | Description |
+| --- | --- | --- |
+| cn | <code>String</code> | Common Name |
+| cert | <code>String</code> | X.509 certificate |
+| key | <code>String</code> | Private key for the certificate |
+| ca | <code>String</code> | CA certificate chain |
+| [callback] | <code>function</code> | Callback will be called with `(err, created)` |
+
+<a name="Now+deleteCertificate"></a>
+
+## now.deleteCertificate(cn, [callback])] ⇒ <code>Promise</code>
+Deletes a certificate.
+
+**Kind**: instance method of <code>[Now](#Now)</code>
+**See**: https://zeit.co/api#delete-certs
+
+| Param | Type | Description |
+| --- | --- | --- |
+| cn | <code>String</code> | Common Name |
+| [callback] | <code>function</code> | Callback will be called with `(err)` |
 
 <a name="Now+getAliases"></a>
 
