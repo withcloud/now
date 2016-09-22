@@ -107,8 +107,8 @@ Now.prototype = {
 
         .catch(err => {
           let errData
-          if (err.response.data.error) {
-            errData = err.response.data.error
+          if (err.data && err.data.err) {
+            errData = err.data.err
           } else if (err.data) {
             errData = err.data
           } else {
