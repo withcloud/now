@@ -370,7 +370,7 @@ Now.prototype = {
    * @return {Promise}
    * @param  {String} id     ID or name of the secret
    * @param  {Function} [callback]     Callback will be called with `(err, status)`
-   * @see https://zeit.co/api#delete-user-aliases
+   * @see https://zeit.co/api#delete-now-secrets
    */
   deleteSecret: function deleteSecret(id, callback) {
     if (!id) {
