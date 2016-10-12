@@ -36,7 +36,6 @@ console.log(deployments)
 
 ### Older ES
 
-
 ```js
 const nowClient = require('now-client')
 const now = nowClient('YOUR TOKEN')
@@ -46,16 +45,6 @@ now.getDeployments().then(deployments => {
   console.log(deployments)
 }).catch(err => {
   console.error(err)
-})
-
-// Or go old-school with callbacks
-now.getDeployments((err, deployments) => {
-  if (err) {
-    console.error(err)
-    return
-  }
-
-  console.log(deployments)
 })
 ```
 
@@ -260,4 +249,3 @@ Deletes a secret and returns its ID.
 | --- | --- | --- |
 | id | <code>String</code> | ID or name of the secret |
 | [callback] | <code>function</code> | Callback will be called with `(err, status)` |
-
