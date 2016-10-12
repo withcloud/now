@@ -9,7 +9,7 @@ if (!TOKEN) {
   throw new Error('now token not provided')
 }
 
-describe('Now', function tests() {
+describe('Now', function () {
   this.timeout(60000)
 
   const now = new Now(TOKEN)
