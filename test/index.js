@@ -1,5 +1,5 @@
 const chai = require('chai')
-const Now = require('../dist/now')
+const Now = require('../dist')
 
 const should = chai.should()
 
