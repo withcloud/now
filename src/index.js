@@ -1,7 +1,7 @@
 const path = require('path')
 const os = require('os')
 
-const axios = require('axios')
+const request = require('request-promise-native')
 
 const ERROR = {
   MISSING_ID: {
@@ -64,7 +64,7 @@ function Now(token = _getToken()) {
     return console.error(
       'No token found! ' +
       'Supply it as argument or use the NOW_TOKEN env variable. ' +
-      '"~/.now.json" will be used, if it\'s found in your home directory.'
+      '`~/.now.json` will be used, if it\'s found in your home directory.'
     )
   }
 
@@ -74,9 +74,10 @@ function Now(token = _getToken()) {
 
   this.token = token
 
-  this.axios = axios.create({
-    baseURL: 'https://api.zeit.co/now',
+  this.request = request.defaults({
+    baseUrl: 'https://api.zeit.co/now',
     timeout: 30000,
+    json: true,
     headers: {
       Authorization: `Bearer ${token}`
     }
@@ -102,13 +103,12 @@ Now.prototype = {
   // Processes requests
   handleRequest(config, callback, selector) {
     return new Promise((resolve, reject) => {
-      this.axios.request(config)
+      this.request(config)
         .then(res => {
-          const data = selector ? res.data[selector] : res.data
+          const data = selector ? res[selector] : res
           resolve(data)
           this.handleCallback(callback, undefined, data)
         })
-
         .catch(err => {
           let errData
           if (err.data && err.data.err) {
@@ -172,7 +172,7 @@ Now.prototype = {
     return this.handleRequest({
       url: '/deployments',
       method: 'post',
-      data: body
+      body
     }, callback)
   },
 
@@ -264,7 +264,7 @@ Now.prototype = {
     return this.handleRequest({
       url: '/domains',
       method: 'post',
-      data: {
+      body: {
         name: domain.name,
         isExternal: domain.isExternalDNS
       }
@@ -326,7 +326,7 @@ Now.prototype = {
     return this.handleRequest({
       url: '/certs',
       method: 'post',
-      data: {
+      body: {
         domains: [cn]
       }
     }, callback)
@@ -346,7 +346,7 @@ Now.prototype = {
     return this.handleRequest({
       url: '/certs',
       method: 'post',
-      data: {
+      body: {
         domains: [cn],
         renew: true
       }
@@ -375,7 +375,7 @@ Now.prototype = {
     return this.handleRequest({
       url: '/certs',
       method: 'put',
-      data: {
+      body: {
         domains: [cn],
         ca: _ca,
         cert,
@@ -444,7 +444,7 @@ Now.prototype = {
     return this.handleRequest({
       url: `/deployments/${id}/aliases`,
       method: 'post',
-      data: {
+      body: {
         alias
       }
     }, callback)
@@ -502,7 +502,7 @@ Now.prototype = {
     return this.handleRequest({
       url: '/secrets',
       method: 'post',
-      data: {
+      body: {
         name,
         value
       }
@@ -529,7 +529,7 @@ Now.prototype = {
     return this.handleRequest({
       url: `/secrets/${id}`,
       method: 'patch',
-      data: {
+      body: {
         name
       }
     }, callback)

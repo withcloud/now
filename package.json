@@ -50,6 +50,7 @@
     "xo": "^0.17.0"
   },
   "dependencies": {
-    "axios": "^0.14.0"
+    "request": "^2.76.0",
+    "request-promise-native": "^1.0.3"
   }
 }
