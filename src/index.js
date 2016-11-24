@@ -75,7 +75,7 @@ function Now(token = _getToken()) {
   this.token = token
 
   this.request = request.defaults({
-    baseUrl: 'https://api.zeit.co/now',
+    baseUrl: 'https://api.zeit.co',
     timeout: 30000,
     json: true,
     headers: {
@@ -132,7 +132,7 @@ Now.prototype = {
    */
   getDeployments(callback) {
     return this.handleRequest({
-      url: '/deployments',
+      url: '/now/deployments',
       method: 'get'
     }, callback, 'deployments')
   },
@@ -150,7 +150,7 @@ Now.prototype = {
     }
 
     return this.handleRequest({
-      url: `/deployments/${id}`,
+      url: `/now/deployments/${id}`,
       method: 'get'
     }, callback)
   },
@@ -170,7 +170,7 @@ Now.prototype = {
     }
 
     return this.handleRequest({
-      url: '/deployments',
+      url: '/now/deployments',
       method: 'post',
       body
     }, callback)
@@ -189,7 +189,7 @@ Now.prototype = {
     }
 
     return this.handleRequest({
-      url: `/deployments/${id}`,
+      url: `/now/deployments/${id}`,
       method: 'delete'
     }, callback)
   },
@@ -207,7 +207,7 @@ Now.prototype = {
     }
 
     return this.handleRequest({
-      url: `/deployments/${id}/files`,
+      url: `/now/deployments/${id}/files`,
       method: 'get'
     }, callback)
   },
@@ -230,7 +230,7 @@ Now.prototype = {
     }
 
     return this.handleRequest({
-      url: `/deployments/${id}/files/${fileId}`,
+      url: `/now/deployments/${id}/files/${fileId}`,
       method: 'get'
     }, callback)
   },
@@ -290,6 +290,48 @@ Now.prototype = {
   },
 
   /**
+   * Get DNS records configured for a domain name.
+   * @return {Promise}
+   * @param  {String} domain          Domain name
+   * @param  {Function} [callback]    Callback will be called with `(err, records)`
+   */
+  getDomainRecords(domain, callback) {
+    return this.handleRequest({
+      url: `/domains/${domain}/records`,
+      method: 'get'
+    }, callback, 'records')
+  },
+
+  /**
+   * Add a DNS record for a domain name.
+   * @return {Promise}
+   * @param  {String} domain          Domain name
+   * @param  {Object} recordData      Record data
+   * @param  {Function} [callback]    Callback will be called with `(err, result)`
+   */
+  addDomainRecord(domain, recordData, callback) {
+    return this.handleRequest({
+      url: `/domains/${domain}/records`,
+      method: 'post',
+      data: recordData
+    }, callback)
+  },
+
+  /**
+   * Remove a DNS record associated with a domain.
+   * @return {Promise}
+   * @param {String} domain           Domain name
+   * @param {String} recordId         Record ID
+   * @param  {Function} [callback]    Callback will be called with `(err, result)`
+   */
+  deleteDomainRecord(domain, recordId, callback) {
+    return this.handleRequest({
+      url: `/domains/${domain}/records/${recordId}`,
+      method: 'delete'
+    }, callback)
+  },
+
+  /**
    * Returns an array of all certificates.
    * @return {Promise}
    * @param  {String|Function} [cn OR callback]     Common name or callback
@@ -297,13 +339,13 @@ Now.prototype = {
    * @see https://zeit.co/api#user-aliases
    */
   getCertificates(cn, callback) {
-    let url = '/certs'
+    let url = '/now/certs'
     let _callback = callback /* eslint no-underscore-dangle: 0 */
 
     if (typeof cn === 'function') {
       _callback = cn
     } else if (typeof cn === 'string') {
-      url = `/certs/${cn}`
+      url = `/now/certs/${cn}`
     }
 
     return this.handleRequest({
@@ -324,7 +366,7 @@ Now.prototype = {
     }
 
     return this.handleRequest({
-      url: '/certs',
+      url: '/now/certs',
       method: 'post',
       body: {
         domains: [cn]
@@ -344,7 +386,7 @@ Now.prototype = {
     }
 
     return this.handleRequest({
-      url: '/certs',
+      url: '/now/certs',
       method: 'post',
       body: {
         domains: [cn],
@@ -373,7 +415,7 @@ Now.prototype = {
     }
 
     return this.handleRequest({
-      url: '/certs',
+      url: '/now/certs',
       method: 'put',
       body: {
         domains: [cn],
@@ -396,7 +438,7 @@ Now.prototype = {
     }
 
     return this.handleRequest({
-      url: `/certs/${cn}`,
+      url: `/now/certs/${cn}`,
       method: 'delete'
     }, callback)
   },
@@ -409,13 +451,13 @@ Now.prototype = {
    * @see https://zeit.co/api#user-aliases
    */
   getAliases(id, callback) {
-    let url = '/aliases'
+    let url = '/now/aliases'
     let _callback = callback /* eslint no-underscore-dangle: 0 */
 
     if (typeof id === 'function') {
       _callback = id
     } else if (typeof id === 'string') {
-      url = `/deployments/${id}/aliases`
+      url = `/now/deployments/${id}/aliases`
     }
 
     return this.handleRequest({
@@ -442,7 +484,7 @@ Now.prototype = {
     }
 
     return this.handleRequest({
-      url: `/deployments/${id}/aliases`,
+      url: `/now/deployments/${id}/aliases`,
       method: 'post',
       body: {
         alias
@@ -463,7 +505,7 @@ Now.prototype = {
     }
 
     return this.handleRequest({
-      url: `/aliases/${id}`,
+      url: `/now/aliases/${id}`,
       method: 'delete'
     }, callback)
   },
@@ -477,7 +519,7 @@ Now.prototype = {
    */
   getSecrets(callback) {
     return this.handleRequest({
-      url: '/secrets',
+      url: '/now/secrets',
       method: 'get'
     }, callback, 'secrets')
   },
@@ -500,7 +542,7 @@ Now.prototype = {
     }
 
     return this.handleRequest({
-      url: '/secrets',
+      url: '/now/secrets',
       method: 'post',
       body: {
         name,
@@ -527,7 +569,7 @@ Now.prototype = {
     }
 
     return this.handleRequest({
-      url: `/secrets/${id}`,
+      url: `/now/secrets/${id}`,
       method: 'patch',
       body: {
         name
@@ -548,7 +590,7 @@ Now.prototype = {
     }
 
     return this.handleRequest({
-      url: `/secrets/${id}`,
+      url: `/now/secrets/${id}`,
       method: 'delete'
     }, callback)
   }
