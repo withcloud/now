@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/zeit/now-client.svg?branch=master)](https://travis-ci.org/zeit/now-client) [![XO code style](https://img.shields.io/badge/code_style-XO-5ed9c7.svg)](https://github.com/sindresorhus/xo)
 
-Node.js module to interact with the official [𝚫 now API](https://zeit.co/api).
+Node.js module to interact with the official [𝚫 now instant API](https://zeit.co/api).
 
 You need to provide your API token, which you can obtain [here](https://zeit.co/account#api-tokens).
 It is possible to pass it as a parameter or with the `NOW_TOKEN` environment variable.
