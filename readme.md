@@ -9,42 +9,27 @@ It is possible to pass it as a parameter or with the `NOW_TOKEN` environment var
 When no token is given, it will use the one contained in your `~/.now.json` file.
 
 ```sh
-$ npm install --save now-client
+npm install --save now-client
 ```
 
-## Examples
+## Usage
 
-Here are a few snippets on how to use this package in your project:
-
-### ES2015
-
-```js
-import nowClient from 'now-client'
-
-const now = nowClient('YOUR TOKEN')
-
-let deployments
-
-try {
-  deployments = await now.getDeployments()
-} catch (err) {
-  console.error(err)
-}
-
-console.log(deployments)
-```
-
-### Older ES
+Firstly, load the package:
 
 ```js
 const nowClient = require('now-client')
-const now = nowClient('YOUR TOKEN')
+```
 
-now.getDeployments().then(deployments => {
-  console.log(deployments)
-}).catch(err => {
-  console.error(err)
-})
+Then initialize it using your token:
+
+```js
+const now = nowClient('YOUR TOKEN')
+```
+
+And finally, you can use its methods to retrieve data:
+
+```js
+await now.getDeployments()
 ```
 
 ## API Reference
