@@ -1,6 +1,8 @@
+// Native
 const path = require('path')
 const os = require('os')
 
+// Packages
 const request = require('request-promise-native')
 
 const ERROR = {
