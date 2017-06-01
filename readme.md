@@ -18,13 +18,13 @@ npm install --save now-client
 Firstly, load the package:
 
 ```js
-const nowClient = require('now-client')
+const NowClient = require('now-client')
 ```
 
 Then initialize it using your token:
 
 ```js
-const now = new nowClient('YOUR TOKEN')
+const now = new NowClient('YOUR TOKEN')
 ```
 
 And finally, you can use its methods to retrieve data:
