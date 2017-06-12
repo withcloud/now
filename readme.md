@@ -5,10 +5,6 @@
 
 The official JavaScript client for interacting with the [now instant API](https://zeit.co/api) (please note that this API only allows you to send strings, it doesn't support streaming - but binary files can be encoded as [base64 strings](https://github.com/zeit/now-client/issues/26#issuecomment-244217104)).
 
-You need to provide your API token, which you can obtain [here](https://zeit.co/account#api-tokens).
-It is possible to pass it as a parameter or with the `NOW_TOKEN` environment variable.
-When no token is given, it will use the one contained in your `~/.now.json` file.
-
 ## Usage
 
 Firstly, install the package using [npm](https://www.npmjs.com):
@@ -23,7 +19,10 @@ Next, load it:
 const NowClient = require('now-client')
 ```
 
-Then initialize it using your `<token>` (required) and your `<team>` (hold the team ID, optional):
+Then initialize it:
+
+- `<token>` holds your token, which can obtained [here](https://zeit.co/account#api-tokens) (optional, will read from `~/.now.json` if not defined - you can also define it using the `NOW_TOKEN` environment variable)
+- `<team>` specifies the ID of the team to which the actions should apply (optional)
 
 ```js
 const now = new NowClient(<token>, <team>)
