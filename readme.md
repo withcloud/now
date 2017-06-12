@@ -21,10 +21,10 @@ Firstly, load the package:
 const NowClient = require('now-client')
 ```
 
-Then initialize it using your token:
+Then initialize it using your `<token>` (required) and your `<team>` (hold the team ID, optional):
 
 ```js
-const now = new NowClient('YOUR TOKEN')
+const now = new NowClient(<token>, <team>)
 ```
 
 And finally, you can use its methods to retrieve data:
