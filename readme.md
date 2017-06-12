@@ -3,19 +3,21 @@
 [![Build Status](https://travis-ci.org/zeit/now-client.svg?branch=master)](https://travis-ci.org/zeit/now-client) [![XO code style](https://img.shields.io/badge/code_style-XO-5ed9c7.svg)](https://github.com/sindresorhus/xo)
 [![Slack Channel](http://zeit-slackin.now.sh/badge.svg)](https://zeit.chat)
 
-The official JavaScript client for interacting with the [now instant API](https://zeit.co/api) (please note that this API doesn't support streaming - it only allows you to send strings, but binary files can be encoded as [base64 strings](https://github.com/zeit/now-client/issues/26#issuecomment-244217104)).
+The official JavaScript client for interacting with the [now instant API](https://zeit.co/api) (please note that this API only allows you to send strings, it doesn't support streaming - but binary files can be encoded as [base64 strings](https://github.com/zeit/now-client/issues/26#issuecomment-244217104)).
 
 You need to provide your API token, which you can obtain [here](https://zeit.co/account#api-tokens).
 It is possible to pass it as a parameter or with the `NOW_TOKEN` environment variable.
 When no token is given, it will use the one contained in your `~/.now.json` file.
 
-```sh
+## Usage
+
+Firstly, install the package using [npm](https://www.npmjs.com):
+
+```bash
 npm install --save now-client
 ```
 
-## Usage
-
-Firstly, load the package:
+Next, load it:
 
 ```js
 const NowClient = require('now-client')
