@@ -1,9 +1,9 @@
-# 𝚫 now client
+# now client
 
 [![Build Status](https://travis-ci.org/zeit/now-client.svg?branch=master)](https://travis-ci.org/zeit/now-client) [![XO code style](https://img.shields.io/badge/code_style-XO-5ed9c7.svg)](https://github.com/sindresorhus/xo)
 [![Slack Channel](http://zeit-slackin.now.sh/badge.svg)](https://zeit.chat)
 
-Node.js module to interact with the official [𝚫 now instant API](https://zeit.co/api).
+The official JavaScript client for interacting with the [now instant API](https://zeit.co/api) (please note that this API doesn't support streaming - it only allows you to send strings, but binary files can be encoded as [base64 strings](https://github.com/zeit/now-client/issues/26#issuecomment-244217104)).
 
 You need to provide your API token, which you can obtain [here](https://zeit.co/account#api-tokens).
 It is possible to pass it as a parameter or with the `NOW_TOKEN` environment variable.
