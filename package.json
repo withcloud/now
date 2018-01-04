@@ -1,7 +1,7 @@
 {
   "name": "now-client",
   "version": "1.1.2",
-  "description": "Node.js wrapper for the 𝚫 now instant API",
+  "description": "Node.js wrapper for the Now API",
   "main": "lib/index.js",
   "scripts": {
     "test": "xo && ava --timeout=30s",
