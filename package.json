@@ -1,6 +1,6 @@
 {
   "name": "now-client",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "description": "Node.js wrapper for the Now API",
   "main": "lib/index.js",
   "scripts": {
