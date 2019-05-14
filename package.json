@@ -4,6 +4,7 @@
   "main": "lib/index.js",
   "license": "MIT",
   "scripts": {
+    "prepare": "npm run build",
     "dev": "run-p watch serve",
     "build": "rollup -c",
     "watch": "rollup -c -w",
