@@ -1,6 +1,6 @@
 {
   "name": "now-client",
-  "version": "3.2.3",
+  "version": "3.3.0",
   "main": "lib/index.js",
   "license": "MIT",
   "scripts": {
