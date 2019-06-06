@@ -2,8 +2,9 @@ import { readdir as readRootFolder, lstatSync } from 'fs-extra'
 
 import readdir from 'recursive-readdir'
 import hashes from './utils/hashes'
-import Deployment from './deployment';
-import { getNowIgnore } from './utils';
+import upload from './upload'
+import deploy from './deploy'
+import { getNowIgnore } from './utils'
 
 export { EVENTS } from './utils'
 
@@ -17,7 +18,7 @@ export class DeploymentError extends Error {
   code: string
 }
 
-export default async function createDeployment(path: string | string[], options: DeploymentOptions = {}): Promise<Deployment> {
+export default async function* createDeployment(path: string | string[], options: DeploymentOptions = {}): AsyncIterableIterator<any> {
   if (typeof path !== 'string' && !Array.isArray(path)) {
     throw new DeploymentError({
       code: 'missing_path',
@@ -62,14 +63,34 @@ export default async function createDeployment(path: string | string[], options:
 
   const files = await hashes(fileList)
 
-  const deployment = new Deployment(files, {
-    ...options,
-    path,
-    isDirectory
-  })
+  yield { type: 'hashes-calculated', payload: files }
 
-  deployment.emit('hashes-calculated', files)
-  deployment.deploy()
+  for await(const event of upload(files, options.token, options.teamId)) {
+    yield event
+  }
 
-  return deployment
+  yield { type: 'all-files-uploaded', payload: files }
+
+  const {
+    token,
+    teamId,
+    defaultName,
+    ...metadata
+  } = options
+
+  try {
+    for await(const event of deploy(files, {
+      totalFiles: files.size,
+      token,
+      isDirectory,
+      path,
+      teamId,
+      defaultName,
+      metadata
+    })) {
+      yield event
+    }
+  } catch (e) {
+    yield { type: 'error', payload: e }
+  }
 }

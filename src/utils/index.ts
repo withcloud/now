@@ -1,6 +1,12 @@
-import { DeploymentFile } from "./hashes"
-import { readFile } from "fs-extra"
-import { join } from "path"
+import { DeploymentFile } from './hashes'
+import { parse as parseUrl } from 'url'
+import { fetch as fetch_ } from 'fetch-h2'
+import retry from 'async-retry'
+import { readFile } from 'fs-extra'
+import { join } from 'path'
+import qs from 'querystring'
+import pkg from '../../package.json'
+import { DeploymentError } from '..'
 
 export const API_FILES = 'https://api.zeit.co/v2/now/files'
 export const API_DEPLOYMENTS = 'https://api.zeit.co/v9/now/deployments'
@@ -8,19 +14,16 @@ export const API_DEPLOYMENTS = 'https://api.zeit.co/v9/now/deployments'
 export const EVENTS = new Set([
   // File events
   'hashes-calculated',
-  'upload-progress',
   'file-uploaded',
   'all-files-uploaded',
   // Deployment events
   'default-to-static',
   'created',
-  'deployment-created',
   'deployment-state-changed',
   'ready',
   'error',
   // Build events
   'build-state-changed',
-  'build-ready',
 ])
 
 export function parseNowJSON(file?: DeploymentFile): object {
@@ -79,10 +82,50 @@ export async function getNowIgnore(files: string[], path: string | string[]): Pr
       nowIgnore
         .toString()
         .split('\n')
-        .filter(s => s.length > 0)
-        .forEach(entry => ignores.push(entry))
+        .filter((s: string): boolean => s.length > 0)
+        .forEach((entry: string): number => ignores.push(entry))
     }
   }))
 
   return ignores
+}
+
+export const fetch = (url: string, token: string, opts: any = {}): Promise<any> => {
+  if (opts.teamId) {
+    const parsedUrl = parseUrl(url, true)
+    const query = parsedUrl.query
+
+    query.teamId = opts.teamId
+    url = `${parsedUrl.href}?${qs.encode(query)}`
+    delete opts.teamId
+  }
+
+  opts.headers = opts.headers || {}
+  // @ts-ignore
+  opts.headers.authorization = `Bearer ${token}`
+  // @ts-ignore
+  opts.headers['user-agent'] = `now-client-v${pkg.version}`
+
+  return retry(async (bail): Promise<any> => {
+    const res = await fetch_(url, opts)
+
+    if (res.status === 200) {
+      return res
+    } else if (res.status > 200 && res.status < 500) {
+      // If something is wrong with our request, we don't retry
+      const { error } = await res.json()
+      
+      return bail(new DeploymentError(error))
+    } else {
+      // If something is wrong with the server, we retry
+      const { error } = await res.json()
+
+      throw new DeploymentError(error)
+    }
+  },
+  {
+    retries: 3,
+    randomize: true
+  }
+  )
 }
