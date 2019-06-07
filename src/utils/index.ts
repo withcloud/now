@@ -1,12 +1,11 @@
 import { DeploymentFile } from './hashes'
 import { parse as parseUrl } from 'url'
 import { fetch as fetch_ } from 'fetch-h2'
-import retry from 'async-retry'
 import { readFile } from 'fs-extra'
 import { join } from 'path'
 import qs from 'querystring'
 import pkg from '../../package.json'
-import { DeploymentError } from '..'
+import { Options } from '../deploy'
 
 export const API_FILES = 'https://api.zeit.co/v2/now/files'
 export const API_DEPLOYMENTS = 'https://api.zeit.co/v9/now/deployments'
@@ -106,26 +105,35 @@ export const fetch = (url: string, token: string, opts: any = {}): Promise<any> 
   // @ts-ignore
   opts.headers['user-agent'] = `now-client-v${pkg.version}`
 
-  return retry(async (bail): Promise<any> => {
-    const res = await fetch_(url, opts)
+  return fetch_(url, opts)
+}
 
-    if (res.status === 200) {
-      return res
-    } else if (res.status > 200 && res.status < 500) {
-      // If something is wrong with our request, we don't retry
-      const { error } = await res.json()
-      
-      return bail(new DeploymentError(error))
+export interface PreparedFile {
+  file: string;
+  sha: string;
+  size: number;
+}
+
+export const prepareFiles = (files: Map<string, DeploymentFile>, options: Options): PreparedFile[] => {
+  const preparedFiles = [...files.keys()].map((sha: string): PreparedFile => {
+    const file = files.get(sha) as DeploymentFile
+    let name
+
+    if (options.isDirectory) {
+      // Directory
+      name = options.path ? file.names[0].replace(`${options.path}/`, '') : file.names[0]
     } else {
-      // If something is wrong with the server, we retry
-      const { error } = await res.json()
-
-      throw new DeploymentError(error)
+      // Array of files or single file
+      const segments = file.names[0].split('/')
+      name = segments[segments.length - 1]
     }
-  },
-  {
-    retries: 3,
-    randomize: true
-  }
-  )
+
+    return {
+      file: name,
+      size: file.data.byteLength || file.data.length,
+      sha,
+    }
+  })
+  
+  return preparedFiles
 }

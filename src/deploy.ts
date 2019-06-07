@@ -1,9 +1,8 @@
-import upload from './upload'
 import { DeploymentFile } from './utils/hashes'
-import { parseNowJSON, fetch, API_DEPLOYMENTS } from './utils'
+import { parseNowJSON, fetch, API_DEPLOYMENTS, prepareFiles } from './utils'
 import checkDeploymentStatus from './deployment-status'
 
-interface Options {
+export interface Options {
   metadata: DeploymentOptions;
   totalFiles: number;
   path: string | string[];
@@ -11,34 +10,11 @@ interface Options {
   teamId?: string;
   isDirectory?: boolean;
   defaultName?: string;
+  preflight?: boolean;
 }
 
 async function* createDeployment (metadata: DeploymentOptions, files: Map<string, DeploymentFile>, options: Options): AsyncIterableIterator<{ type: string; payload: any }> {
-  interface PreparedFile {
-    file: string;
-    sha: string;
-    size: number;
-  }
-
-  const preparedFiles: PreparedFile[] = [...files.keys()].map((sha: string): PreparedFile => {
-    const file = files.get(sha) as DeploymentFile
-    let name
-
-    if (options.isDirectory) {
-      // Directory
-      name = options.path ? file.names[0].replace(`${options.path}/`, '') : file.names[0]
-    } else {
-      // Array of files or single file
-      const segments = file.names[0].split('/')
-      name = segments[segments.length - 1]
-    }
-
-    return {
-      file: name,
-      size: file.data.byteLength || file.data.length,
-      sha,
-    }
-  })
+  const preparedFiles = prepareFiles(files, options)
 
   try {
     const dpl = await fetch(`${API_DEPLOYMENTS}${options.teamId ? `?teamId=${options.teamId}` : ''}`, options.token, {
@@ -80,14 +56,6 @@ const getDefaultName = (path: string | string[] | undefined, isDirectory: boolea
 }
 
 export default async function* deploy(files: Map<string, DeploymentFile>, options: Options): AsyncIterableIterator<{ type: string; payload: any }> {
-  try {
-    for await(const event of upload(files, options.token, options.teamId)) {
-      yield event
-    }
-  } catch (e) {
-    return yield { type: 'error', payload: e }
-  }
-
   const nowJson: DeploymentFile | undefined = Array.from(files.values()).find((file: DeploymentFile): boolean => {
     return Boolean(file.names.find((name: string): boolean => name.includes('now.json')))
   })
