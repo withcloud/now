@@ -68,10 +68,11 @@ declare interface DeploymentOptions {
   target?: string;
   token?: string | null;
   teamId?: string;
+  force?: boolean;
   name?: string;
   defaultName?: string;
   isDirectory?: boolean;
   path?: string | string[];
-  github: any;
-  scope: string;
+  github?: any;
+  scope?: string;
 }
