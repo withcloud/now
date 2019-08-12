@@ -9,6 +9,9 @@ import { Options } from '../deploy'
 
 export const API_FILES = 'https://api.zeit.co/v2/now/files'
 export const API_DEPLOYMENTS = 'https://api.zeit.co/v9/now/deployments'
+export const API_DEPLOYMENTS_LEGACY = 'https://api.zeit.co/v3/now/deployments'
+export const API_DELETE_DEPLOYMENTS_LEGACY =
+  'https://api.zeit.co/v2/now/deployments'
 
 export const EVENTS = new Set([
   // File events
@@ -20,10 +23,10 @@ export const EVENTS = new Set([
   'ready',
   'error',
   // Build events
-  'build-state-changed',
+  'build-state-changed'
 ])
 
-export function parseNowJSON(file?: DeploymentFile): object {
+export function parseNowJSON(file?: DeploymentFile): NowJsonOptions {
   if (!file) {
     return {}
   }
@@ -40,7 +43,10 @@ export function parseNowJSON(file?: DeploymentFile): object {
   }
 }
 
-export async function getNowIgnore(files: string[], path: string | string[]): Promise<string[]> {
+export async function getNowIgnore(
+  files: string[],
+  path: string | string[]
+): Promise<string[]> {
   let ignores: string[] = [
     '.hg',
     '.git',
@@ -64,30 +70,38 @@ export async function getNowIgnore(files: string[], path: string | string[]): Pr
     'node_modules',
     '__pycache__/',
     'venv/',
-    'CVS',
+    'CVS'
   ]
 
-  await Promise.all(files.map(async (file: string): Promise<void> => {
-    if (file.includes('.nowignore')) {
-      const filePath = Array.isArray(path)
-        ? file
-        : file.includes(path)
-          ? file
-          : join(path, file)
-      const nowIgnore = await readFile(filePath)
+  await Promise.all(
+    files.map(
+      async (file: string): Promise<void> => {
+        if (file.includes('.nowignore')) {
+          const filePath = Array.isArray(path)
+            ? file
+            : file.includes(path)
+              ? file
+              : join(path, file)
+          const nowIgnore = await readFile(filePath)
 
-      nowIgnore
-        .toString()
-        .split('\n')
-        .filter((s: string): boolean => s.length > 0)
-        .forEach((entry: string): number => ignores.push(entry))
-    }
-  }))
+          nowIgnore
+            .toString()
+            .split('\n')
+            .filter((s: string): boolean => s.length > 0)
+            .forEach((entry: string): number => ignores.push(entry))
+        }
+      }
+    )
+  )
 
   return ignores
 }
 
-export const fetch = (url: string, token: string, opts: any = {}): Promise<any> => {
+export const fetch = (
+  url: string,
+  token: string,
+  opts: any = {}
+): Promise<any> => {
   if (opts.teamId) {
     const parsedUrl = parseUrl(url, true)
     const query = parsedUrl.query
@@ -112,34 +126,39 @@ export interface PreparedFile {
   size: number;
 }
 
-export const prepareFiles = (files: Map<string, DeploymentFile>, options: Options): PreparedFile[] => {
-  const preparedFiles = [...files.keys()].reduce((acc: PreparedFile[], sha: string): PreparedFile[] => {
-    const next = [...acc]
+export const prepareFiles = (
+  files: Map<string, DeploymentFile>,
+  options: Options
+): PreparedFile[] => {
+  const preparedFiles = [...files.keys()].reduce(
+    (acc: PreparedFile[], sha: string): PreparedFile[] => {
+      const next = [...acc]
 
-    const file = files.get(sha) as DeploymentFile
+      const file = files.get(sha) as DeploymentFile
 
-    for (const name of file.names) {
-      let fileName
+      for (const name of file.names) {
+        let fileName
 
-      if (options.isDirectory) {
-        // Directory
-        fileName = options.path ? name.replace(`${options.path}/`, '') : name
-      } else {
-        // Array of files or single file
-        const segments = name.split('/')
-        fileName = segments[segments.length - 1]
+        if (options.isDirectory) {
+          // Directory
+          fileName = options.path ? name.replace(`${options.path}/`, '') : name
+        } else {
+          // Array of files or single file
+          const segments = name.split('/')
+          fileName = segments[segments.length - 1]
+        }
+
+        next.push({
+          file: fileName,
+          size: file.data.byteLength || file.data.length,
+          sha
+        })
       }
 
-      next.push({
-        file: fileName,
-        size: file.data.byteLength || file.data.length,
-        sha,
-      })
-    }
-
-
-    return next
-  }, [])
+      return next
+    },
+    []
+  )
 
   return preparedFiles
 }
