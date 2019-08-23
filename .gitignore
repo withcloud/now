@@ -1,4 +1,6 @@
-lib
-*.html
 node_modules
-*.log
+tmp
+target/
+.next
+coverage
+*.tgz
