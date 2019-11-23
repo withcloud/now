@@ -142,13 +142,14 @@ export default class Now extends EventEmitter {
     if (isBuilds) {
       deployment = await processDeployment({
         now: this,
-        debug,
+        output: this._output,
         hashes,
         paths,
         requestBody,
         uploadStamp,
         deployStamp,
         quiet,
+        nowConfig,
       });
     } else {
       // Read `registry.npmjs.org` authToken from .npmrc
@@ -178,12 +179,13 @@ export default class Now extends EventEmitter {
         limits: nowConfig.limits,
         atlas,
         config: nowConfig,
+        functions: nowConfig.functions,
       };
 
       deployment = await processDeployment({
         legacy: true,
         now: this,
-        debug,
+        output: this._output,
         hashes,
         paths,
         requestBody,
@@ -191,6 +193,7 @@ export default class Now extends EventEmitter {
         deployStamp,
         quiet,
         env,
+        nowConfig,
       });
     }
 
@@ -377,7 +380,7 @@ export default class Now extends EventEmitter {
     if (!app && !Object.keys(meta).length) {
       // Get the 35 latest projects and their latest deployment
       const query = new URLSearchParams({ limit: 35 });
-      const projects = await fetchRetry(`/projects/list?${query}`);
+      const projects = await fetchRetry(`/v2/projects/?${query}`);
 
       const deployments = await Promise.all(
         projects.map(async ({ id: projectId }) => {
@@ -477,7 +480,7 @@ export default class Now extends EventEmitter {
     }
 
     const url = `/${
-      isBuilds ? 'v9' : 'v5'
+      isBuilds ? 'v10' : 'v5'
     }/now/deployments/${encodeURIComponent(id)}`;
 
     return this.retry(
@@ -583,10 +586,17 @@ export default class Now extends EventEmitter {
     opts.headers.Authorization = `Bearer ${this._token}`;
     opts.headers['user-agent'] = ua;
 
+    if (
+      opts.body &&
+      typeof opts.body === 'object' &&
+      opts.body.constructor === Object
+    ) {
+      opts.body = JSON.stringify(opts.body);
+      opts.headers['Content-Type'] = 'application/json';
+    }
+
     return this._output.time(
-      `${opts.method || 'GET'} ${this._apiUrl}${_url} ${JSON.stringify(
-        opts.body
-      ) || ''}`,
+      `${opts.method || 'GET'} ${this._apiUrl}${_url} ${opts.body || ''}`,
       fetch(`${this._apiUrl}${_url}`, opts)
     );
   }

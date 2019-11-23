@@ -2,6 +2,7 @@ import { readdir, stat, readFile, unlink } from 'fs';
 import { promisify } from 'util';
 import { join } from 'path';
 import { Route } from '@now/build-utils';
+import { injectGatsbyConfig } from './utils/gatsby-config';
 
 const readirPromise = promisify(readdir);
 const readFilePromise = promisify(readFile);
@@ -43,17 +44,25 @@ export const frameworks: Framework[] = [
         // if the file doesn't exist, we don't create routes
         return [];
       }
-    }
+    },
+    beforeBuildHook: async entrypointDir => {
+      await injectGatsbyConfig(entrypointDir);
+    },
   },
   {
     name: 'Hexo',
     dependency: 'hexo',
-    getOutputDirName: async () => 'public'
+    getOutputDirName: async () => 'public',
+  },
+  {
+    name: 'Eleventy',
+    dependency: '@11ty/eleventy',
+    getOutputDirName: async () => '_site',
   },
   {
     name: 'Docusaurus 2.0',
     dependency: '@docusaurus/core',
-    getOutputDirName: async () => 'build'
+    getOutputDirName: async () => 'build',
   },
   {
     name: 'Preact',
@@ -61,13 +70,13 @@ export const frameworks: Framework[] = [
     getOutputDirName: async () => 'build',
     defaultRoutes: [
       {
-        handle: 'filesystem'
+        handle: 'filesystem',
       },
       {
         src: '/(.*)',
-        dest: '/index.html'
-      }
-    ]
+        dest: '/index.html',
+      },
+    ],
   },
   {
     name: 'Ember',
@@ -75,13 +84,13 @@ export const frameworks: Framework[] = [
     getOutputDirName: async () => 'dist',
     defaultRoutes: [
       {
-        handle: 'filesystem'
+        handle: 'filesystem',
       },
       {
         src: '/(.*)',
-        dest: '/index.html'
-      }
-    ]
+        dest: '/index.html',
+      },
+    ],
   },
   {
     name: 'Vue.js',
@@ -91,21 +100,21 @@ export const frameworks: Framework[] = [
       {
         src: '^/[^/]*\\.(js|txt|ico|json)',
         headers: { 'cache-control': 'max-age=300' },
-        continue: true
+        continue: true,
       },
       {
         src: '^/(img|js|css|fonts|media)/.*',
         headers: { 'cache-control': 'max-age=31536000, immutable' },
-        continue: true
+        continue: true,
       },
       {
-        handle: 'filesystem'
+        handle: 'filesystem',
       },
       {
         src: '^.*',
-        dest: '/index.html'
-      }
-    ]
+        dest: '/index.html',
+      },
+    ],
   },
   {
     name: 'Angular',
@@ -125,13 +134,13 @@ export const frameworks: Framework[] = [
     },
     defaultRoutes: [
       {
-        handle: 'filesystem'
+        handle: 'filesystem',
       },
       {
         src: '/(.*)',
-        dest: '/index.html'
-      }
-    ]
+        dest: '/index.html',
+      },
+    ],
   },
   {
     name: 'Polymer',
@@ -146,13 +155,13 @@ export const frameworks: Framework[] = [
     },
     defaultRoutes: [
       {
-        handle: 'filesystem'
+        handle: 'filesystem',
       },
       {
         src: '/(.*)',
-        dest: '/index.html'
-      }
-    ]
+        dest: '/index.html',
+      },
+    ],
   },
   {
     name: 'Svelte',
@@ -160,13 +169,13 @@ export const frameworks: Framework[] = [
     getOutputDirName: async () => 'public',
     defaultRoutes: [
       {
-        handle: 'filesystem'
+        handle: 'filesystem',
       },
       {
         src: '/(.*)',
-        dest: '/index.html'
-      }
-    ]
+        dest: '/index.html',
+      },
+    ],
   },
   {
     name: 'Create React App',
@@ -176,26 +185,26 @@ export const frameworks: Framework[] = [
       {
         src: '/static/(.*)',
         headers: { 'cache-control': 's-maxage=31536000, immutable' },
-        continue: true
+        continue: true,
       },
       {
         src: '/service-worker.js',
         headers: { 'cache-control': 's-maxage=0' },
-        continue: true
+        continue: true,
       },
       {
         src: '/sockjs-node/(.*)',
-        dest: '/sockjs-node/$1'
+        dest: '/sockjs-node/$1',
       },
       {
-        handle: 'filesystem'
+        handle: 'filesystem',
       },
       {
         src: '/(.*)',
         headers: { 'cache-control': 's-maxage=0' },
-        dest: '/index.html'
-      }
-    ]
+        dest: '/index.html',
+      },
+    ],
   },
   {
     name: 'Create React App (ejected)',
@@ -205,31 +214,31 @@ export const frameworks: Framework[] = [
       {
         src: '/static/(.*)',
         headers: { 'cache-control': 's-maxage=31536000, immutable' },
-        continue: true
+        continue: true,
       },
       {
         src: '/service-worker.js',
         headers: { 'cache-control': 's-maxage=0' },
-        continue: true
+        continue: true,
       },
       {
         src: '/sockjs-node/(.*)',
-        dest: '/sockjs-node/$1'
+        dest: '/sockjs-node/$1',
       },
       {
-        handle: 'filesystem'
+        handle: 'filesystem',
       },
       {
         src: '/(.*)',
         headers: { 'cache-control': 's-maxage=0' },
-        dest: '/index.html'
-      }
-    ]
+        dest: '/index.html',
+      },
+    ],
   },
   {
     name: 'Gridsome',
     dependency: 'gridsome',
-    getOutputDirName: async () => 'dist'
+    getOutputDirName: async () => 'dist',
   },
   {
     name: 'UmiJS',
@@ -237,13 +246,13 @@ export const frameworks: Framework[] = [
     getOutputDirName: async () => 'dist',
     defaultRoutes: [
       {
-        handle: 'filesystem'
+        handle: 'filesystem',
       },
       {
         src: '/(.*)',
-        dest: '/index.html'
-      }
-    ]
+        dest: '/index.html',
+      },
+    ],
   },
   {
     name: 'Docusaurus 1.0',
@@ -259,12 +268,12 @@ export const frameworks: Framework[] = [
       }
 
       return base;
-    }
+    },
   },
   {
     name: 'Sapper',
     dependency: 'sapper',
-    getOutputDirName: async () => '__sapper__/export'
+    getOutputDirName: async () => '__sapper__/export',
   },
   {
     name: 'Saber',
@@ -273,18 +282,32 @@ export const frameworks: Framework[] = [
     defaultRoutes: [
       {
         src: '/_saber/.*',
-        headers: { 'cache-control': 'max-age=31536000, immutable' }
+        headers: { 'cache-control': 'max-age=31536000, immutable' },
       },
       {
-        handle: 'filesystem'
+        handle: 'filesystem',
       },
       {
         src: '.*',
         status: 404,
-        dest: '404.html'
-      }
-    ]
-  }
+        dest: '404.html',
+      },
+    ],
+  },
+  {
+    name: 'Stencil',
+    dependency: '@stencil/core',
+    getOutputDirName: async () => 'www',
+    defaultRoutes: [
+      {
+        handle: 'filesystem',
+      },
+      {
+        src: '/(.*)',
+        dest: '/index.html',
+      },
+    ],
+  },
 ];
 
 export interface Framework {
@@ -293,4 +316,5 @@ export interface Framework {
   getOutputDirName: (dirPrefix: string) => Promise<string>;
   defaultRoutes?: Route[] | ((dirPrefix: string) => Promise<Route[]>);
   minNodeRange?: string;
+  beforeBuildHook?: (entrypointDir: string) => Promise<void>;
 }

@@ -7,13 +7,14 @@ import {
 } from 'fs-extra';
 import os from 'os';
 import path from 'path';
-import semver from 'semver';
 import resolveFrom from 'resolve-from';
+import semver from 'semver';
 
 import {
   BuildOptions,
   Config,
   createLambda,
+  debug,
   download,
   FileBlob,
   FileFsRef,
@@ -22,36 +23,35 @@ import {
   getSpawnOptions,
   glob,
   Lambda,
+  PackageJson,
   PrepareCacheOptions,
+  Prerender,
   Route,
   runNpmInstall,
   runPackageJsonScript,
-  debug,
-  PackageJson,
 } from '@now/build-utils';
 import nodeFileTrace, { NodeFileTraceReasons } from '@zeit/node-file-trace';
 
 import createServerlessConfig from './create-serverless-config';
 import nextLegacyVersions from './legacy-versions';
 import {
+  createLambdaFromPseudoLayers,
+  createPseudoLayer,
   EnvConfig,
   excludeFiles,
   ExperimentalTraceVersion,
-  filesFromDirectory,
   getDynamicRoutes,
   getNextConfig,
   getPathsInside,
+  getPrerenderManifest,
   getRoutes,
-  includeOnlyEntryDirectory,
   isDynamicRoute,
   normalizePackageJson,
   normalizePage,
+  PseudoLayer,
   stringMap,
   syncEnvVars,
   validateEntrypoint,
-  createLambdaFromPseudoLayers,
-  PseudoLayer,
-  createPseudoLayer,
 } from './utils';
 
 interface BuildParamsMeta {
@@ -68,6 +68,20 @@ interface BuildParamsType extends BuildOptions {
 }
 
 export const version = 2;
+
+const nowDevChildProcesses = new Set<ChildProcess>();
+
+['SIGINT', 'SIGTERM'].forEach(signal => {
+  process.once(signal as NodeJS.Signals, () => {
+    for (const child of nowDevChildProcesses) {
+      debug(
+        `Got ${signal}, killing dev server child process (pid=${child.pid})`
+      );
+      process.kill(child.pid, signal);
+    }
+    process.exit(0);
+  });
+});
 
 /**
  * Read package.json from files
@@ -214,6 +228,7 @@ export const build = async ({
       const { forked, getUrl } = startDevServer(entryPath, runtimeEnv);
       urls[entrypoint] = await getUrl();
       childProcess = forked;
+      nowDevChildProcesses.add(forked);
       debug(
         `${name} Development server for ${entrypoint} running at ${urls[entrypoint]}`
       );
@@ -242,6 +257,7 @@ export const build = async ({
   }
 
   const isLegacy = isLegacyNext(nextVersion);
+  let shouldRunScript = 'now-build';
 
   debug(`MODE: ${isLegacy ? 'legacy' : 'serverless'}`);
 
@@ -262,10 +278,16 @@ export const build = async ({
       "WARNING: your application is being deployed in @now/next's legacy mode. http://err.sh/zeit/now/now-next-legacy-mode"
     );
 
-    debug('normalizing package.json');
+    debug('Normalizing package.json');
     const packageJson = normalizePackageJson(pkg);
-    debug('normalized package.json result: ', packageJson);
+    debug('Normalized package.json result: ', packageJson);
     await writePackageJson(entryPath, packageJson);
+  } else if (pkg.scripts && pkg.scripts['now-build']) {
+    debug('Found user `now-build` script');
+    shouldRunScript = 'now-build';
+  } else if (pkg.scripts && pkg.scripts['build']) {
+    debug('Found user `build` script');
+    shouldRunScript = 'build';
   } else if (!pkg.scripts || !pkg.scripts['now-build']) {
     debug(
       'Your application is being built using `next build`. ' +
@@ -276,15 +298,16 @@ export const build = async ({
       'now-build': 'next build',
       ...(pkg.scripts || {}),
     };
+    shouldRunScript = 'now-build';
     await writePackageJson(entryPath, pkg);
   }
 
   if (process.env.NPM_AUTH_TOKEN) {
-    debug('found NPM_AUTH_TOKEN in environment, creating .npmrc');
+    debug('Found NPM_AUTH_TOKEN in environment, creating .npmrc');
     await writeNpmRc(entryPath, process.env.NPM_AUTH_TOKEN);
   }
 
-  debug('installing dependencies...');
+  console.log('Installing dependencies...');
   await runNpmInstall(entryPath, ['--prefer-offline'], spawnOpts, meta);
 
   let realNextVersion: string | undefined;
@@ -292,23 +315,23 @@ export const build = async ({
     realNextVersion = require(resolveFrom(entryPath, 'next/package.json'))
       .version;
 
-    debug(`detected Next.js version: ${realNextVersion}`);
+    debug(`Detected Next.js version: ${realNextVersion}`);
   } catch (_ignored) {
-    debug(`could not identify real Next.js version, that's OK!`);
+    debug(`Could not identify real Next.js version, that's OK!`);
   }
 
   if (!isLegacy) {
     await createServerlessConfig(workPath, entryPath, realNextVersion);
   }
 
-  debug('running user script...');
+  debug('Running user script...');
   const memoryToConsume = Math.floor(os.totalmem() / 1024 ** 2) - 128;
   const env: { [key: string]: string | undefined } = { ...spawnOpts.env };
   env.NODE_OPTIONS = `--max_old_space_size=${memoryToConsume}`;
-  await runPackageJsonScript(entryPath, 'now-build', { ...spawnOpts, env });
+  await runPackageJsonScript(entryPath, shouldRunScript, { ...spawnOpts, env });
 
   if (isLegacy) {
-    debug('running npm install --production...');
+    debug('Running npm install --production...');
     await runNpmInstall(
       entryPath,
       ['--prefer-offline', '--production'],
@@ -323,13 +346,19 @@ export const build = async ({
 
   const exportedPageRoutes: Route[] = [];
   const lambdas: { [key: string]: Lambda } = {};
+  const prerenders: { [key: string]: Prerender | FileFsRef } = {};
   const staticPages: { [key: string]: FileFsRef } = {};
   const dynamicPages: string[] = [];
+  const dynamicDataRoutes: Array<{ src: string; dest: string }> = [];
+
+  const appMountPrefixNoTrailingSlash = path.posix
+    .join('/', entryDirectory)
+    .replace(/\/+$/, '');
 
   if (isLegacy) {
     const filesAfterBuild = await glob('**', entryPath);
 
-    debug('preparing lambda files...');
+    debug('Preparing serverless function files...');
     let buildId: string;
     try {
       buildId = await readFile(
@@ -397,7 +426,7 @@ export const build = async ({
           ],
         };
 
-        debug(`Creating lambda for page: "${page}"...`);
+        debug(`Creating serverless function for page: "${page}"...`);
         lambdas[path.join(entryDirectory, pathname)] = await createLambda({
           files: {
             ...nextFiles,
@@ -407,24 +436,39 @@ export const build = async ({
           handler: 'now__launcher.launcher',
           runtime: nodeVersion.runtime,
         });
-        debug(`Created lambda for page: "${page}"`);
+        debug(`Created serverless function for page: "${page}"`);
       })
     );
   } else {
-    debug('preparing lambda files...');
+    debug('Preparing serverless function files...');
     const pagesDir = path.join(entryPath, '.next', 'serverless', 'pages');
 
     const pages = await glob('**/*.js', pagesDir);
     const staticPageFiles = await glob('**/*.html', pagesDir);
+    const prerenderManifest = await getPrerenderManifest(entryPath);
 
     Object.keys(staticPageFiles).forEach((page: string) => {
+      const pathname = page.replace(/\.html$/, '');
+      const routeName = normalizePage(pathname);
+
+      // Prerendered routes emit a `.html` file but should not be treated as a
+      // static page.
+      // Lazily prerendered routes do not have a `.html` file so we don't need
+      // to check/skip it here.
+      if (
+        Object.prototype.hasOwnProperty.call(
+          prerenderManifest.routes,
+          routeName
+        )
+      ) {
+        return;
+      }
+
       const staticRoute = path.join(entryDirectory, page);
       staticPages[staticRoute] = staticPageFiles[page];
 
-      const pathname = page.replace(/\.html$/, '');
-
       if (isDynamicRoute(pathname)) {
-        dynamicPages.push(normalizePage(pathname));
+        dynamicPages.push(routeName);
         return;
       }
 
@@ -488,7 +532,8 @@ export const build = async ({
     } = {};
 
     if (requiresTracing) {
-      const tracingLabel = 'Tracing Next.js lambdas for external files ...';
+      const tracingLabel =
+        'Traced Next.js serverless functions for external files in';
       console.time(tracingLabel);
 
       const apiPages: string[] = [];
@@ -534,7 +579,7 @@ export const build = async ({
       apiFileList.forEach(collectTracedFiles(apiReasons, apiTracedFiles));
       console.timeEnd(tracingLabel);
 
-      const zippingLabel = 'Compressing shared lambda files';
+      const zippingLabel = 'Compressed shared serverless function files';
       console.time(zippingLabel);
 
       pseudoLayers.push(await createPseudoLayer(tracedFiles));
@@ -552,7 +597,9 @@ export const build = async ({
 
       const assetKeys = Object.keys(assets);
       if (assetKeys.length > 0) {
-        debug('detected (legacy) assets to be bundled with lambda:');
+        debug(
+          'detected (legacy) assets to be bundled with serverless function:'
+        );
         assetKeys.forEach(assetFile => debug(`\t${assetFile}`));
         debug(
           '\nPlease upgrade to Next.js 9.1 to leverage modern asset handling.'
@@ -562,7 +609,7 @@ export const build = async ({
 
     const launcherPath = path.join(__dirname, 'templated-launcher.js');
     const launcherData = await readFile(launcherPath, 'utf8');
-    const allLambdasLabel = `All lambdas created`;
+    const allLambdasLabel = `All serverless functions created in`;
     console.time(allLambdasLabel);
 
     await Promise.all(
@@ -577,9 +624,6 @@ export const build = async ({
         if (isDynamicRoute(pathname)) {
           dynamicPages.push(normalizePage(pathname));
         }
-
-        const label = `Creating lambda for page: "${page}"...`;
-        console.time(label);
 
         const pageFileName = path.normalize(
           path.relative(workPath, pages[page].fsPath)
@@ -619,16 +663,118 @@ export const build = async ({
             runtime: nodeVersion.runtime,
           });
         }
-        console.timeEnd(label);
       })
     );
     console.timeEnd(allLambdasLabel);
+
+    let prerenderGroup = 1;
+    const onPrerenderRoute = (routeKey: string, isLazy: boolean) => {
+      // Get the route file as it'd be mounted in the builder output
+      const routeFileNoExt = routeKey === '/' ? '/index' : routeKey;
+
+      const htmlFsRef = isLazy
+        ? null
+        : new FileFsRef({
+            fsPath: path.join(pagesDir, `${routeFileNoExt}.html`),
+          });
+      const jsonFsRef = isLazy
+        ? null
+        : new FileFsRef({
+            fsPath: path.join(pagesDir, `${routeFileNoExt}.json`),
+          });
+
+      let initialRevalidate: false | number;
+      let srcRoute: string | null;
+      let dataRoute: string;
+
+      if (isLazy) {
+        const pr = prerenderManifest.lazyRoutes[routeKey];
+        initialRevalidate = 1; // TODO: should Next.js provide this default?
+        // @ts-ignore
+        if (initialRevalidate === false) {
+          // Lazy routes cannot be "snapshotted" in time.
+          throw new Error('invariant isLazy: initialRevalidate !== false');
+        }
+        srcRoute = null;
+        dataRoute = pr.dataRoute;
+      } else {
+        const pr = prerenderManifest.routes[routeKey];
+        ({ initialRevalidate, srcRoute, dataRoute } = pr);
+      }
+
+      const outputPathPage = path.posix.join(entryDirectory, routeFileNoExt);
+      const outputSrcPathPage =
+        srcRoute == null
+          ? outputPathPage
+          : path.posix.join(
+              entryDirectory,
+              srcRoute === '/' ? '/index' : srcRoute
+            );
+      const outputPathData = path.posix.join(entryDirectory, dataRoute);
+
+      if (initialRevalidate === false) {
+        if (htmlFsRef == null || jsonFsRef == null) {
+          throw new Error('invariant: htmlFsRef != null && jsonFsRef != null');
+        }
+
+        const outputPathPageHtml = outputPathPage.concat('.html');
+        prerenders[outputPathPageHtml] = htmlFsRef;
+        prerenders[outputPathData] = jsonFsRef;
+        exportedPageRoutes.push({
+          src: path.posix.join('/', outputPathPage),
+          dest: outputPathPageHtml,
+        });
+      } else {
+        const lambda = lambdas[outputSrcPathPage];
+        if (lambda == null) {
+          throw new Error(`Unable to find lambda for route: ${routeFileNoExt}`);
+        }
+
+        prerenders[outputPathPage] = new Prerender({
+          expiration: initialRevalidate,
+          lambda,
+          fallback: htmlFsRef,
+          group: prerenderGroup,
+        });
+        prerenders[outputPathData] = new Prerender({
+          expiration: initialRevalidate,
+          lambda,
+          fallback: jsonFsRef,
+          group: prerenderGroup,
+        });
+
+        ++prerenderGroup;
+      }
+    };
+
+    Object.keys(prerenderManifest.routes).forEach(route =>
+      onPrerenderRoute(route, false)
+    );
+    Object.keys(prerenderManifest.lazyRoutes).forEach(route =>
+      onPrerenderRoute(route, true)
+    );
+
+    // Dynamic pages for lazy routes should be handled by the lambda flow.
+    Object.keys(prerenderManifest.lazyRoutes).forEach(lazyRoute => {
+      const { dataRouteRegex, dataRoute } = prerenderManifest.lazyRoutes[
+        lazyRoute
+      ];
+      dynamicDataRoutes.push({
+        // Next.js provided data route regex
+        src: dataRouteRegex.replace(/^\^/, `^${appMountPrefixNoTrailingSlash}`),
+        // Location of lambda in builder output
+        dest: path.posix.join(entryDirectory, dataRoute),
+      });
+    });
   }
 
   const nextStaticFiles = await glob(
     '**',
     path.join(entryPath, '.next', 'static')
   );
+  const staticFolderFiles = await glob('**', path.join(entryPath, 'static'));
+  const publicFolderFiles = await glob('**', path.join(entryPath, 'public'));
+
   const staticFiles = Object.keys(nextStaticFiles).reduce(
     (mappedFiles, file) => ({
       ...mappedFiles,
@@ -638,23 +784,24 @@ export const build = async ({
     }),
     {}
   );
-
-  const entryDirectoryFiles = includeOnlyEntryDirectory(files, entryDirectory);
-  const staticDirectoryFiles = filesFromDirectory(
-    entryDirectoryFiles,
-    path.join(entryDirectory, 'static')
-  );
-  const publicDirectoryFiles = filesFromDirectory(
-    entryDirectoryFiles,
-    path.join(entryDirectory, 'public')
-  );
-  const publicFiles = Object.keys(publicDirectoryFiles).reduce(
+  const staticDirectoryFiles = Object.keys(staticFolderFiles).reduce(
     (mappedFiles, file) => ({
       ...mappedFiles,
-      [file.replace(/public[/\\]+/, '')]: publicDirectoryFiles[file],
+      [path.join(entryDirectory, 'static', file)]: staticFolderFiles[file],
     }),
     {}
   );
+  const publicDirectoryFiles = Object.keys(publicFolderFiles).reduce(
+    (mappedFiles, file) => ({
+      ...mappedFiles,
+      [path.join(
+        entryDirectory,
+        file.replace(/public[/\\]+/, '')
+      )]: publicFolderFiles[file],
+    }),
+    {}
+  );
+
   let dynamicPrefix = path.join('/', entryDirectory);
   dynamicPrefix = dynamicPrefix === '/' ? '' : dynamicPrefix;
 
@@ -674,8 +821,10 @@ export const build = async ({
 
   return {
     output: {
-      ...publicFiles,
+      ...publicDirectoryFiles,
       ...lambdas,
+      // Prerenders may override Lambdas -- this is an intentional behavior.
+      ...prerenders,
       ...staticPages,
       ...staticFiles,
       ...staticDirectoryFiles,
@@ -687,7 +836,7 @@ export const build = async ({
       {
         // This ensures we only match known emitted-by-Next.js files and not
         // user-emitted files which may be missing a hash in their filename.
-        src: '/_next/static/(?:[^/]+/pages|chunks|runtime)/.+',
+        src: path.join('/', entryDirectory, '_next/static/(?:[^/]+/pages|chunks|runtime|css|media)/.+'),
         // Next.js assets contain a hash or entropy in their filenames, so they
         // are guaranteed to be unique and cacheable indefinitely.
         headers: { 'cache-control': 'public,max-age=31536000,immutable' },
@@ -696,8 +845,11 @@ export const build = async ({
       // Next.js page lambdas, `static/` folder, reserved assets, and `public/`
       // folder
       { handle: 'filesystem' },
+      { src: path.join('/', entryDirectory, '_next(?!/data(?:/|$))(?:/.*)?') },
       // Dynamic routes
       ...dynamicRoutes,
+      ...dynamicDataRoutes,
+      // Custom Next.js 404 page (TODO: do we want to remove this?)
       ...(isLegacy
         ? []
         : [
@@ -717,7 +869,7 @@ export const prepareCache = async ({
   workPath,
   entrypoint,
 }: PrepareCacheOptions) => {
-  debug('preparing cache ...');
+  debug('Preparing cache...');
   const entryDirectory = path.dirname(entrypoint);
   const entryPath = path.join(workPath, entryDirectory);
 
@@ -731,7 +883,7 @@ export const prepareCache = async ({
     return {};
   }
 
-  debug('producing cache file manifest ...');
+  debug('Producing cache file manifest...');
   const cacheEntrypoint = path.relative(workPath, entryPath);
   const cache = {
     ...(await glob(path.join(cacheEntrypoint, 'node_modules/**'), workPath)),
@@ -739,6 +891,6 @@ export const prepareCache = async ({
     ...(await glob(path.join(cacheEntrypoint, 'package-lock.json'), workPath)),
     ...(await glob(path.join(cacheEntrypoint, 'yarn.lock'), workPath)),
   };
-  debug('cache file manifest produced');
+  debug('Cache file manifest produced');
   return cache;
 };

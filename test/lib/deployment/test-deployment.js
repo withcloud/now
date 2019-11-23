@@ -29,7 +29,10 @@ async function testDeployment (
   buildDelegate
 ) {
   console.log('testDeployment', fixturePath);
-  const globResult = await glob(`${fixturePath}/**`, { nodir: true });
+  const globResult = await glob(`${fixturePath}/**`, {
+    nodir: true,
+    dot: true,
+  });
   const bodies = globResult.reduce((b, f) => {
     const r = path.relative(fixturePath, f);
     b[r] = fs.readFileSync(f);
@@ -81,6 +84,10 @@ async function testDeployment (
 
   for (const probe of nowJson.probes || []) {
     console.log('testing', JSON.stringify(probe));
+    if (probe.delay) {
+      await new Promise((resolve) => setTimeout(resolve, probe.delay));
+      continue;
+    }
     const probeUrl = `https://${deploymentUrl}${probe.path}`;
     const fetchOpts = { method: probe.method, headers: { ...probe.headers } };
     if (probe.body) {
@@ -93,9 +100,7 @@ async function testDeployment (
     if (probe.status) {
       if (probe.status !== resp.status) {
         throw new Error(
-          `Fetched page ${probeUrl} does not return the status ${
-            probe.status
-          } Instead it has ${resp.status}`
+          `Fetched page ${probeUrl} does not return the status ${probe.status} Instead it has ${resp.status}`
         );
       }
     }
@@ -107,23 +112,28 @@ async function testDeployment (
           .map(([ k, v ]) => `  ${k}=${v}`)
           .join('\n');
         throw new Error(
-          `Fetched page ${probeUrl} does not contain ${probe.mustContain}.`
-            + ` Instead it contains ${text.slice(0, 60)}`
-            + ` Response headers:\n ${headers}`
+          `Fetched page ${probeUrl} does not contain ${probe.mustContain}.` +
+            ` Instead it contains ${text.slice(0, 60)}` +
+            ` Response headers:\n ${headers}`
         );
       }
     } else if (probe.responseHeaders) {
       // eslint-disable-next-line no-loop-func
       Object.keys(probe.responseHeaders).forEach((header) => {
-        if (resp.headers.get(header) !== probe.responseHeaders[header]) {
+        const actual = resp.headers.get(header);
+        const expected = probe.responseHeaders[header];
+        const isEqual = Array.isArray(expected)
+          ? expected.every((h) => actual.includes(h))
+          : expected.startsWith('/') && expected.endsWith('/')
+          ? new RegExp(expected.slice(1, -1)).test(actual)
+          : expected === actual;
+        if (!isEqual) {
           const headers = Array.from(resp.headers.entries())
             .map(([ k, v ]) => `  ${k}=${v}`)
             .join('\n');
 
           throw new Error(
-            `Fetched page ${probeUrl} does not contain header ${header}: \`${
-              probe.responseHeaders[header]
-            }\`.\n\nResponse headers:\n ${headers}`
+            `Page ${probeUrl} does not have header ${header}.\n\nExpected: ${expected}.\nActual: ${headers}`
           );
         }
       });

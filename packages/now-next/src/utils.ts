@@ -61,24 +61,6 @@ function excludeFiles(
 }
 
 /**
- * Creates a new Files object holding only the entrypoint files
- */
-function includeOnlyEntryDirectory(
-  files: Files,
-  entryDirectory: string
-): Files {
-  if (entryDirectory === '.') {
-    return files;
-  }
-
-  function matcher(filePath: string) {
-    return !filePath.startsWith(entryDirectory);
-  }
-
-  return excludeFiles(files, matcher);
-}
-
-/**
  * Exclude package manager lockfiles from files
  */
 function excludeLockFiles(files: Files): Files {
@@ -90,17 +72,6 @@ function excludeLockFiles(files: Files): Files {
     delete newFiles['yarn.lock'];
   }
   return files;
-}
-
-/**
- * Include only the files from a selected directory
- */
-function filesFromDirectory(files: Files, dir: string): Files {
-  function matcher(filePath: string) {
-    return !filePath.startsWith(dir.replace(/\\/g, '/'));
-  }
-
-  return excludeFiles(files, matcher);
 }
 
 /**
@@ -189,12 +160,12 @@ function getPathsInside(entryDirectory: string, files: Files) {
 }
 
 function normalizePage(page: string): string {
-  // remove '/index' from the end
-  page = page.replace(/\/index$/, '/');
   // Resolve on anything that doesn't start with `/`
   if (!page.startsWith('/')) {
     page = `/${page}`;
   }
+  // remove '/index' from the end
+  page = page.replace(/\/index$/, '/');
   return page;
 }
 
@@ -205,15 +176,33 @@ function getRoutes(
   files: Files,
   url: string
 ): Route[] {
+  let pagesDir = '';
   const filesInside: Files = {};
   const prefix = entryDirectory === `.` ? `/` : `/${entryDirectory}/`;
+  const fileKeys = Object.keys(files);
 
-  for (const file of Object.keys(files)) {
+  for (const file of fileKeys) {
     if (!pathsInside.includes(file)) {
       continue;
     }
 
+    if (!pagesDir) {
+      if (file.startsWith(path.join(entryDirectory, 'pages'))) {
+        pagesDir = 'pages';
+      }
+    }
+
     filesInside[file] = files[file];
+  }
+
+  // If default pages dir isn't found check for `src/pages`
+  if (
+    !pagesDir &&
+    fileKeys.some(file =>
+      file.startsWith(path.join(entryDirectory, 'src/pages'))
+    )
+  ) {
+    pagesDir = 'src/pages';
   }
 
   const routes: Route[] = [
@@ -231,13 +220,13 @@ function getRoutes(
 
   for (const file of filePaths) {
     const relativePath = path.relative(entryDirectory, file);
-    const isPage = pathIsInside('pages', relativePath);
+    const isPage = pathIsInside(pagesDir, relativePath);
 
     if (!isPage) {
       continue;
     }
 
-    const relativeToPages = path.relative('pages', relativePath);
+    const relativeToPages = path.relative(pagesDir, relativePath);
     const extension = path.extname(relativeToPages);
     const pageName = relativeToPages.replace(extension, '').replace(/\\/g, '/');
 
@@ -481,13 +470,106 @@ export async function createLambdaFromPseudoLayers({
   });
 }
 
+export type NextPrerenderedRoutes = {
+  routes: {
+    [route: string]: {
+      initialRevalidate: number | false;
+      dataRoute: string;
+      srcRoute: string | null;
+    };
+  };
+
+  lazyRoutes: {
+    [route: string]: {
+      routeRegex: string;
+      dataRoute: string;
+      dataRouteRegex: string;
+    };
+  };
+};
+
+export async function getPrerenderManifest(
+  entryPath: string
+): Promise<NextPrerenderedRoutes> {
+  const pathPrerenderManifest = path.join(
+    entryPath,
+    '.next',
+    'prerender-manifest.json'
+  );
+
+  const hasManifest: boolean = await fs
+    .access(pathPrerenderManifest, fs.constants.F_OK)
+    .then(() => true)
+    .catch(() => false);
+
+  if (!hasManifest) {
+    return { routes: {}, lazyRoutes: {} };
+  }
+
+  const manifest: {
+    version: 1;
+    routes: {
+      [key: string]: {
+        initialRevalidateSeconds: number | false;
+        dataRoute: string;
+        srcRoute: string | null;
+      };
+    };
+    dynamicRoutes: {
+      [key: string]: {
+        routeRegex: string;
+        dataRoute: string;
+        dataRouteRegex: string;
+      };
+    };
+  } = JSON.parse(await fs.readFile(pathPrerenderManifest, 'utf8'));
+
+  switch (manifest.version) {
+    case 1: {
+      const routes = Object.keys(manifest.routes);
+      const lazyRoutes = Object.keys(manifest.dynamicRoutes);
+
+      const ret: NextPrerenderedRoutes = { routes: {}, lazyRoutes: {} };
+
+      routes.forEach(route => {
+        const {
+          initialRevalidateSeconds,
+          dataRoute,
+          srcRoute,
+        } = manifest.routes[route];
+        ret.routes[route] = {
+          initialRevalidate:
+            initialRevalidateSeconds === false
+              ? false
+              : Math.max(1, initialRevalidateSeconds),
+          dataRoute,
+          srcRoute,
+        };
+      });
+
+      lazyRoutes.forEach(lazyRoute => {
+        const {
+          routeRegex,
+          dataRoute,
+          dataRouteRegex,
+        } = manifest.dynamicRoutes[lazyRoute];
+
+        ret.lazyRoutes[lazyRoute] = { routeRegex, dataRoute, dataRouteRegex };
+      });
+
+      return ret;
+    }
+    default: {
+      return { routes: {}, lazyRoutes: {} };
+    }
+  }
+}
+
 export {
   excludeFiles,
   validateEntrypoint,
-  includeOnlyEntryDirectory,
   excludeLockFiles,
   normalizePackageJson,
-  filesFromDirectory,
   getNextConfig,
   getPathsInside,
   getRoutes,

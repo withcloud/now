@@ -1,17 +1,20 @@
 import { DeploymentFile } from './hashes';
 import { parse as parseUrl } from 'url';
 import fetch_ from 'node-fetch';
-import { readFile } from 'fs-extra';
 import { join, sep } from 'path';
 import qs from 'querystring';
+import ignore from 'ignore';
 import pkg from '../../package.json';
 import { Options } from '../deploy';
+import { NowJsonOptions } from '../types';
+import { Sema } from 'async-sema';
+import { readFile } from 'fs-extra';
+const semaphore = new Sema(10);
 
-export const API_FILES = 'https://api.zeit.co/v2/now/files';
-export const API_DEPLOYMENTS = 'https://api.zeit.co/v9/now/deployments';
-export const API_DEPLOYMENTS_LEGACY = 'https://api.zeit.co/v3/now/deployments';
-export const API_DELETE_DEPLOYMENTS_LEGACY =
-  'https://api.zeit.co/v2/now/deployments';
+export const API_FILES = '/v2/now/files';
+export const API_DEPLOYMENTS = '/v10/now/deployments';
+export const API_DEPLOYMENTS_LEGACY = '/v3/now/deployments';
+export const API_DELETE_DEPLOYMENTS_LEGACY = '/v2/now/deployments';
 
 export const EVENTS = new Set([
   // File events
@@ -22,19 +25,20 @@ export const EVENTS = new Set([
   // Deployment events
   'created',
   'ready',
+  'alias-assigned',
   'warning',
   'error',
   // Build events
   'build-state-changed',
 ]);
 
-export function parseNowJSON(file?: DeploymentFile): NowJsonOptions {
-  if (!file) {
+export async function parseNowJSON(filePath?: string): Promise<NowJsonOptions> {
+  if (!filePath) {
     return {};
   }
 
   try {
-    const jsonString = file.data.toString();
+    const jsonString = await readFile(filePath, 'utf8');
 
     return JSON.parse(jsonString);
   } catch (e) {
@@ -45,10 +49,15 @@ export function parseNowJSON(file?: DeploymentFile): NowJsonOptions {
   }
 }
 
-export async function getNowIgnore(
-  files: string[],
-  path: string | string[]
-): Promise<string[]> {
+const maybeRead = async function<T>(path: string, default_: T) {
+  try {
+    return await readFile(path, 'utf8');
+  } catch (err) {
+    return default_;
+  }
+};
+
+export async function getNowIgnore(path: string | string[]): Promise<any> {
   let ignores: string[] = [
     '.hg',
     '.git',
@@ -75,35 +84,34 @@ export async function getNowIgnore(
     'CVS',
   ];
 
-  await Promise.all(
-    files.map(
-      async (file: string): Promise<void> => {
-        if (file.includes('.nowignore')) {
-          const filePath = Array.isArray(path)
-            ? file
-            : file.includes(path)
-            ? file
-            : join(path, file);
-          const nowIgnore = await readFile(filePath);
+  const nowIgnore = Array.isArray(path)
+    ? await maybeRead(
+        join(
+          path.find(fileName => fileName.includes('.nowignore'), '') || '',
+          '.nowignore'
+        ),
+        ''
+      )
+    : await maybeRead(join(path, '.nowignore'), '');
 
-          nowIgnore
-            .toString()
-            .split('\n')
-            .filter((s: string): boolean => s.length > 0)
-            .forEach((entry: string): number => ignores.push(entry));
-        }
-      }
-    )
-  );
+  const ig = ignore().add(`${ignores.join('\n')}\n${nowIgnore}`);
 
-  return ignores;
+  return { ig, ignores };
 }
 
-export const fetch = (
+export const fetch = async (
   url: string,
   token: string,
-  opts: any = {}
+  opts: any = {},
+  debugEnabled?: boolean
 ): Promise<any> => {
+  semaphore.acquire();
+  const debug = createDebug(debugEnabled);
+  let time: number;
+
+  url = `${opts.apiUrl || 'https://api.zeit.co'}${url}`;
+  delete opts.apiUrl;
+
   if (opts.teamId) {
     const parsedUrl = parseUrl(url, true);
     const query = parsedUrl.query;
@@ -119,7 +127,13 @@ export const fetch = (
   // @ts-ignore
   opts.headers['user-agent'] = `now-client-v${pkg.version}`;
 
-  return fetch_(url, opts);
+  debug(`${opts.method || 'GET'} ${url}`);
+  time = Date.now();
+  const res = await fetch_(url, opts);
+  debug(`DONE in ${Date.now() - time}ms: ${opts.method || 'GET'} ${url}`);
+  semaphore.release();
+
+  return res;
 };
 
 export interface PreparedFile {
@@ -168,3 +182,18 @@ export const prepareFiles = (
 
   return preparedFiles;
 };
+
+export function createDebug(debug?: boolean) {
+  const isDebug = debug || process.env.NOW_CLIENT_DEBUG;
+
+  if (isDebug) {
+    return (...logs: string[]) => {
+      process.stderr.write(
+        [`[now-client-debug] ${new Date().toISOString()}`, ...logs].join(' ') +
+          '\n'
+      );
+    };
+  }
+
+  return () => {};
+}
