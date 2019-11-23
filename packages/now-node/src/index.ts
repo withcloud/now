@@ -179,7 +179,7 @@ async function compile(
   console.log('[now-node] input', input);
   // --- added ---
 
-  const inputFiles = new Set<string>([entrypointPath]);
+  const inputFiles = new Set<string>([input]);
 
   const sourceCache = new Map<string, string | Buffer | null>();
   const fsCache = new Map<string, File>();
