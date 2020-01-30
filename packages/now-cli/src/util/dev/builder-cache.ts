@@ -1,14 +1,13 @@
-import chalk from 'chalk';
 import execa from 'execa';
 import semver from 'semver';
 import pipe from 'promisepipe';
 import retry from 'async-retry';
 import npa from 'npm-package-arg';
+import pluralize from 'pluralize';
 import { extract } from 'tar-fs';
 import { createHash } from 'crypto';
 import { createGunzip } from 'zlib';
 import { join, resolve } from 'path';
-import { funCacheDir } from '@zeit/fun';
 import { PackageJson } from '@now/build-utils';
 import XDGAppPaths from 'xdg-app-paths';
 import {
@@ -17,7 +16,6 @@ import {
   readFile,
   readJSON,
   writeFile,
-  remove,
 } from 'fs-extra';
 import pkg from '../../../package.json';
 
@@ -29,6 +27,8 @@ import { getDistTag } from '../get-dist-tag';
 import * as staticBuilder from './static-builder';
 import { BuilderWithPackage } from './types';
 import { getBundledBuilders } from './get-bundled-builders';
+
+declare const __non_webpack_require__: typeof require;
 
 const registryTypes = new Set(['version', 'tag', 'range']);
 
@@ -156,6 +156,14 @@ export function getBuildUtils(packages: string[]): string {
   return `@now/build-utils@${version}`;
 }
 
+function parseVersionSafe(rawSpec: string) {
+  try {
+    return semver.parse(rawSpec);
+  } catch (e) {
+    return null;
+  }
+}
+
 export function filterPackage(
   builderSpec: string,
   distTag: string,
@@ -163,6 +171,17 @@ export function filterPackage(
 ) {
   if (builderSpec in localBuilders) return false;
   const parsed = npa(builderSpec);
+  const parsedVersion = parseVersionSafe(parsed.rawSpec);
+  // skip install of already installed Runtime
+  if (
+    parsed.name &&
+    parsed.type === 'version' &&
+    parsedVersion &&
+    buildersPkg.dependencies &&
+    parsedVersion.version == buildersPkg.dependencies[parsed.name]
+  ) {
+    return false;
+  }
   if (
     parsed.name &&
     parsed.type === 'tag' &&
@@ -213,23 +232,27 @@ export async function installBuilders(
   }
   const yarnPath = join(yarnDir, 'yarn');
   const buildersPkgPath = join(builderDir, 'package.json');
-  const buildersPkg = await readJSON(buildersPkgPath);
+  const buildersPkgBefore = await readJSON(buildersPkgPath);
 
   packages.push(getBuildUtils(packages));
 
   // Filter out any packages that come packaged with `now-cli`
   const packagesToInstall = packages.filter(p =>
-    filterPackage(p, distTag, buildersPkg)
+    filterPackage(p, distTag, buildersPkgBefore)
   );
 
   if (packagesToInstall.length === 0) {
-    output.debug('No builders need to be installed');
+    output.debug('No Runtimes need to be installed');
     return;
   }
 
   const stopSpinner = wait(
-    `Installing builders: ${packagesToInstall.sort().join(', ')}`
+    `Installing ${pluralize(
+      'Runtime',
+      packagesToInstall.length
+    )}: ${packagesToInstall.sort().join(', ')}`
   );
+
   try {
     await retry(
       () =>
@@ -252,6 +275,17 @@ export async function installBuilders(
   } finally {
     stopSpinner();
   }
+
+  const updatedPackages: string[] = [];
+  const buildersPkgAfter = await readJSON(buildersPkgPath);
+  for (const [name, version] of Object.entries(buildersPkgAfter.dependencies)) {
+    if (version !== buildersPkgBefore.dependencies[name]) {
+      output.debug(`Runtime "${name}" updated to version \`${version}\``);
+      updatedPackages.push(name);
+    }
+  }
+
+  purgeRequireCache(updatedPackages, builderDir, output);
 }
 
 export async function updateBuilders(
@@ -263,6 +297,7 @@ export async function updateBuilders(
   if (!builderDir) {
     builderDir = await builderDirPromise;
   }
+
   const packages = Array.from(packagesSet);
   const yarnPath = join(yarnDir, 'yarn');
   const buildersPkgPath = join(builderDir, 'package.json');
@@ -293,10 +328,12 @@ export async function updateBuilders(
   const buildersPkgAfter = await readJSON(buildersPkgPath);
   for (const [name, version] of Object.entries(buildersPkgAfter.dependencies)) {
     if (version !== buildersPkgBefore.dependencies[name]) {
-      output.debug(`Builder "${name}" updated to version \`${version}\``);
+      output.debug(`Runtime "${name}" updated to version \`${version}\``);
       updatedPackages.push(name);
     }
   }
+
+  purgeRequireCache(updatedPackages, builderDir, output);
 
   return updatedPackages;
 }
@@ -372,4 +409,26 @@ function hasBundledBuilders(dependencies: { [name: string]: string }): boolean {
     }
   }
   return true;
+}
+
+function purgeRequireCache(
+  packages: string[],
+  builderDir: string,
+  output: Output
+) {
+  const _require =
+    typeof __non_webpack_require__ === 'function'
+      ? __non_webpack_require__
+      : require;
+
+  // The `require()` cache for the builder's assets must be purged
+  const packagesPaths = packages.map(b => join(builderDir, 'node_modules', b));
+  for (const id of Object.keys(_require.cache)) {
+    for (const path of packagesPaths) {
+      if (id.startsWith(path)) {
+        output.debug(`Purging require cache for "${id}"`);
+        delete _require.cache[id];
+      }
+    }
+  }
 }

@@ -58,12 +58,12 @@ test('convertCleanUrls true', () => {
     {
       src: '^/(?:(.+)/)?index(?:\\.html)?/?$',
       headers: { Location: '/$1' },
-      status: 301,
+      status: 308,
     },
     {
       src: '^/(.*)\\.html/?$',
       headers: { Location: '/$1' },
-      status: 301,
+      status: 308,
     },
   ];
   deepEqual(actual, expected);
@@ -94,12 +94,12 @@ test('convertCleanUrls true, trailingSlash true', () => {
     {
       src: '^/(?:(.+)/)?index(?:\\.html)?/?$',
       headers: { Location: '/$1/' },
-      status: 301,
+      status: 308,
     },
     {
       src: '^/(.*)\\.html/?$',
       headers: { Location: '/$1/' },
-      status: 301,
+      status: 308,
     },
   ];
   deepEqual(actual, expected);
@@ -148,38 +148,101 @@ test('convertCleanUrls false', () => {
 test('convertRedirects', () => {
   const actual = convertRedirects([
     { source: '/some/old/path', destination: '/some/new/path' },
+    { source: '/next(\\.js)?', destination: 'https://nextjs.org' },
     {
-      source: '/firebase/(.*)',
+      source: '/proxy/(.*)',
       destination: 'https://www.firebase.com',
       statusCode: 302,
+    },
+    {
+      source: '/proxy-regex/([a-zA-Z]{1,})',
+      destination: 'https://firebase.com/$1',
+    },
+    {
+      source: '/proxy-port/([a-zA-Z]{1,})',
+      destination: 'https://firebase.com:8080/$1',
     },
     {
       source: '/projects/:id/:action',
       destination: '/projects.html',
     },
     { source: '/old/:segment/path', destination: '/new/path/:segment' },
+    { source: '/catchall/:hello*', destination: '/catchall/:hello*/' },
+    {
+      source: '/another-catch/:hello+',
+      destination: '/another-catch/:hello+/',
+    },
+    {
+      source: '/feedback/((?!general).*)',
+      destination: '/feedback/general',
+    },
+    { source: '/catchme/:id*', destination: '/api/user' },
+    {
+      source: '/hello/:world*',
+      destination: '/something#:world*',
+    },
   ]);
 
   const expected = [
     {
       src: '^\\/some\\/old\\/path$',
       headers: { Location: '/some/new/path' },
-      status: 307,
+      status: 308,
     },
     {
-      src: '^\\/firebase\\/(.*)$',
+      src: '^\\/next(\\.js)?$',
+      headers: { Location: 'https://nextjs.org' },
+      status: 308,
+    },
+    {
+      src: '^\\/proxy(?:\\/(.*))$',
       headers: { Location: 'https://www.firebase.com' },
       status: 302,
     },
     {
-      src: '^\\/projects\\/([^\\/]+?)\\/([^\\/]+?)$',
-      headers: { Location: '/projects.html?id=$1&action=$2' },
-      status: 307,
+      src: '^\\/proxy-regex(?:\\/([a-zA-Z]{1,}))$',
+      headers: { Location: 'https://firebase.com/$1' },
+      status: 308,
     },
     {
-      src: '^\\/old\\/([^\\/]+?)\\/path$',
-      headers: { Location: '/new/path/$1' },
-      status: 307,
+      src: '^\\/proxy-port(?:\\/([a-zA-Z]{1,}))$',
+      headers: { Location: 'https://firebase.com:8080/$1' },
+      status: 308,
+    },
+    {
+      src: '^\\/projects(?:\\/([^\\/]+?))(?:\\/([^\\/]+?))$',
+      headers: { Location: '/projects.html?id=$1&action=$2' },
+      status: 308,
+    },
+    {
+      src: '^\\/old(?:\\/([^\\/]+?))\\/path$',
+      headers: { Location: '/new/path/$1?segment=$1' },
+      status: 308,
+    },
+    {
+      src: '^\\/catchall(?:\\/((?:[^\\/]+?)(?:\\/(?:[^\\/]+?))*))?$',
+      headers: { Location: '/catchall/$1/?hello=$1' },
+      status: 308,
+    },
+    {
+      src: '^\\/another-catch(?:\\/((?:[^\\/]+?)(?:\\/(?:[^\\/]+?))*))$',
+      headers: { Location: '/another-catch/$1/?hello=$1' },
+      status: 308,
+    },
+    {
+      src: '^\\/feedback(?:\\/((?!general).*))$',
+      headers: { Location: '/feedback/general' },
+      status: 308,
+    },
+    {
+      src: '^\\/catchme(?:\\/((?:[^\\/]+?)(?:\\/(?:[^\\/]+?))*))?$',
+      headers: { Location: '/api/user?id=$1' },
+      status: 308,
+    },
+    {
+      src: '^\\/hello(?:\\/((?:[^\\/]+?)(?:\\/(?:[^\\/]+?))*))?$',
+      headers: { Location: '/something?world=$1#$1' },
+      status: 308,
     },
   ];
 
@@ -187,16 +250,32 @@ test('convertRedirects', () => {
 
   const mustMatch = [
     ['/some/old/path'],
-    ['/firebase/one', '/firebase/2', '/firebase/-', '/firebase/dir/sub'],
+    ['/next', '/next.js'],
+    ['/proxy/one', '/proxy/2', '/proxy/-', '/proxy/dir/sub'],
+    ['/proxy-regex/admin', '/proxy-regex/anotherAdmin'],
+    ['/proxy-port/admin', '/proxy-port/anotherAdmin'],
     ['/projects/one/edit', '/projects/two/edit'],
     ['/old/one/path', '/old/two/path'],
+    ['/catchall/first', '/catchall/first/second'],
+    ['/another-catch/first', '/another-catch/first/second'],
+    ['/feedback/another'],
+    ['/catchme/id-1', '/catchme/id/2'],
+    ['/hello/world', '/hello/another/world'],
   ];
 
   const mustNotMatch = [
     ['/nope'],
-    ['/fire', '/firebasejumper/two'],
+    ['/nextAjs', '/nextjs'],
+    ['/prox', '/proxyed/two'],
+    ['/proxy-regex/user/1', '/proxy-regex/another/1'],
+    ['/proxy-port/user/1', '/proxy-port/another/1'],
     ['/projects/edit', '/projects/two/three/delete', '/projects'],
     ['/old/path', '/old/two/foo', '/old'],
+    ['/random-catch'],
+    ['/another-catch'],
+    ['/feedback/general'],
+    ['/catchm', '/random'],
+    ['/not-this-one', '/helloo'],
   ];
 
   assertRegexMatches(actual, mustMatch, mustNotMatch);
@@ -205,21 +284,107 @@ test('convertRedirects', () => {
 test('convertRewrites', () => {
   const actual = convertRewrites([
     { source: '/some/old/path', destination: '/some/new/path' },
-    { source: '/firebase/(.*)', destination: 'https://www.firebase.com' },
+    { source: '/proxy/(.*)', destination: 'https://www.firebase.com' },
+    {
+      source: '/proxy-regex/([a-zA-Z]{1,})',
+      destination: 'https://firebase.com/$1',
+    },
+    {
+      source: '/proxy-port/([a-zA-Z]{1,})',
+      destination: 'https://firebase.com:8080/$1',
+    },
     { source: '/projects/:id/edit', destination: '/projects.html' },
+    {
+      source: '/users/:id',
+      destination: '/api/user?identifier=:id&version=v2',
+    },
+    {
+      source: '/:file/:id',
+      destination: '/:file/get?identifier=:id',
+    },
+    {
+      source: '/qs-and-hash/:id/:hash',
+      destination: '/api/get?identifier=:id#:hash',
+    },
+    {
+      source: '/fullurl',
+      destination:
+        'https://user:pass@sub.example.com:8080/path/goes/here?v=1&id=2#hash',
+    },
+    {
+      source: '/dont-override-qs/:name/:age',
+      destination: '/final?name=bob&age=',
+    },
+    { source: '/catchall/:hello*/', destination: '/catchall/:hello*' },
+    {
+      source: '/another-catch/:hello+/',
+      destination: '/another-catch/:hello+',
+    },
+    { source: '/catchme/:id*', destination: '/api/user' },
   ]);
 
   const expected = [
-    { src: '^\\/some\\/old\\/path$', dest: '/some/new/path', continue: true },
+    { src: '^\\/some\\/old\\/path$', dest: '/some/new/path', check: true },
     {
-      src: '^\\/firebase\\/(.*)$',
+      src: '^\\/proxy(?:\\/(.*))$',
       dest: 'https://www.firebase.com',
-      continue: true,
+      check: true,
     },
     {
-      src: '^\\/projects\\/([^\\/]+?)\\/edit$',
+      src: '^\\/proxy-regex(?:\\/([a-zA-Z]{1,}))$',
+      dest: 'https://firebase.com/$1',
+      check: true,
+    },
+    {
+      src: '^\\/proxy-port(?:\\/([a-zA-Z]{1,}))$',
+      dest: 'https://firebase.com:8080/$1',
+      check: true,
+    },
+    {
+      src: '^\\/projects(?:\\/([^\\/]+?))\\/edit$',
       dest: '/projects.html?id=$1',
-      continue: true,
+      check: true,
+    },
+    {
+      src: '^\\/users(?:\\/([^\\/]+?))$',
+      dest: '/api/user?identifier=$1&version=v2&id=$1',
+      check: true,
+    },
+    {
+      src: '^(?:\\/([^\\/]+?))(?:\\/([^\\/]+?))$',
+      dest: '/$1/get?identifier=$2&file=$1&id=$2',
+      check: true,
+    },
+    {
+      src: '^\\/qs-and-hash(?:\\/([^\\/]+?))(?:\\/([^\\/]+?))$',
+      dest: '/api/get?identifier=$1&id=$1&hash=$2#$2',
+      check: true,
+    },
+    {
+      src: '^\\/fullurl$',
+      dest:
+        'https://user:pass@sub.example.com:8080/path/goes/here?v=1&id=2#hash',
+      check: true,
+    },
+    {
+      src: '^\\/dont-override-qs(?:\\/([^\\/]+?))(?:\\/([^\\/]+?))$',
+      dest: '/final?name=bob&age=',
+      check: true,
+    },
+    {
+      src: '^\\/catchall(?:\\/((?:[^\\/]+?)(?:\\/(?:[^\\/]+?))*))?\\/$',
+      dest: '/catchall/$1?hello=$1',
+      check: true,
+    },
+    {
+      src: '^\\/another-catch(?:\\/((?:[^\\/]+?)(?:\\/(?:[^\\/]+?))*))\\/$',
+      dest: '/another-catch/$1?hello=$1',
+      check: true,
+    },
+    {
+      src: '^\\/catchme(?:\\/((?:[^\\/]+?)(?:\\/(?:[^\\/]+?))*))?$',
+      dest: '/api/user?id=$1',
+      check: true,
     },
   ];
 
@@ -227,16 +392,34 @@ test('convertRewrites', () => {
 
   const mustMatch = [
     ['/some/old/path'],
-    ['/firebase/one', '/firebase/two'],
+    ['/proxy/one', '/proxy/two'],
+    ['/proxy-regex/admin', '/proxy-regex/anotherAdmin'],
+    ['/proxy-port/admin', '/proxy-port/anotherAdmin'],
     ['/projects/one/edit', '/projects/two/edit'],
-    ['/old/one/path', '/old/two/path'],
+    ['/users/four', '/users/five'],
+    ['/file1/yep', '/file2/nope'],
+    ['/qs-and-hash/test/first', '/qs-and-hash/test/second'],
+    ['/fullurl'],
+    ['/dont-override-qs/bob/42', '/dont-override-qs/alice/29'],
+    ['/catchall/first/', '/catchall/first/second/'],
+    ['/another-catch/first/', '/another-catch/first/second/'],
+    ['/catchme/id-1', '/catchme/id/2'],
   ];
 
   const mustNotMatch = [
     ['/nope'],
-    ['/fire', '/firebasejumper/two'],
+    ['/prox', '/proxyed/two'],
+    ['/proxy-regex/user/1', '/proxy-regex/another/1'],
+    ['/proxy-port/user/1', '/proxy-port/another/1'],
     ['/projects/edit', '/projects/two/delete', '/projects'],
-    ['/old/path', '/old/two/foo', '/old'],
+    ['/users/edit/four', '/users/five/delete', '/users'],
+    ['/'],
+    ['/qs-and-hash', '/qs-and-hash/onlyone'],
+    ['/full'],
+    ['/dont-override-qs', '/dont-override-qs/nope'],
+    ['/random-catch/'],
+    ['/another-catch/'],
+    ['/catchm', '/random'],
   ];
 
   assertRegexMatches(actual, mustMatch, mustNotMatch);
@@ -266,17 +449,35 @@ test('convertHeaders', () => {
         },
       ],
     },
+    {
+      source: '/blog/:path*',
+      headers: [
+        {
+          key: 'on-blog',
+          value: ':path*',
+        },
+        {
+          key: ':path*',
+          value: 'blog',
+        },
+      ],
+    },
   ]);
 
   const expected = [
     {
-      src: '(.*)+/(.*)\\.(eot|otf|ttf|ttc|woff|font\\.css)',
+      src: '^(.*)+(?:\\/(.*))\\.(eot|otf|ttf|ttc|woff|font\\.css)$',
       headers: { 'Access-Control-Allow-Origin': '*' },
       continue: true,
     },
     {
-      src: '404.html',
+      src: '^404\\.html$',
       headers: { 'Cache-Control': 'max-age=300', 'Set-Cookie': 'error=404' },
+      continue: true,
+    },
+    {
+      src: '^\\/blog(?:\\/((?:[^\\/]+?)(?:\\/(?:[^\\/]+?))*))?$',
+      headers: { 'on-blog': '$1', $1: 'blog' },
       continue: true,
     },
   ];
@@ -286,11 +487,13 @@ test('convertHeaders', () => {
   const mustMatch = [
     ['hello/world/file.eot', 'another/font.ttf', 'dir/arial.font.css'],
     ['404.html'],
+    ['/blog/first-post', '/blog/another/one'],
   ];
 
   const mustNotMatch = [
     ['hello/file.jpg', 'hello/font-css', 'dir/arial.font-css'],
     ['403.html', '500.html'],
+    ['/blogg', '/random'],
   ];
 
   assertRegexMatches(actual, mustMatch, mustNotMatch);
@@ -300,9 +503,9 @@ test('convertTrailingSlash enabled', () => {
   const actual = convertTrailingSlash(true);
   const expected = [
     {
-      src: '^(.*[^\\/])$',
-      headers: { Location: '$1/' },
-      status: 307,
+      src: '^/(.*[^\\/])$',
+      headers: { Location: '/$1/' },
+      status: 308,
     },
   ];
   deepEqual(actual, expected);
@@ -318,9 +521,9 @@ test('convertTrailingSlash disabled', () => {
   const actual = convertTrailingSlash(false);
   const expected = [
     {
-      src: '^(.*)\\/$',
-      headers: { Location: '$1' },
-      status: 307,
+      src: '^/(.*)\\/$',
+      headers: { Location: '/$1' },
+      status: 308,
     },
   ];
   deepEqual(actual, expected);

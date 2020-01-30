@@ -2,7 +2,7 @@
 
 #### Why This Error Occurred
 
-The domain you supplied cannot be verified using either the intended set of nameservers of the given verification TXT record.
+The domain you supplied cannot be verified using either the intended set of nameservers or the given verification TXT record.
 
 #### Possible Ways to Fix It
 
@@ -17,5 +17,6 @@ ZEIT will also automatically check periodically that your domain has been verifi
 If you would not like to verify your domain, you can remove it from your account using `now domains rm <domain>`.
 
 #### Resources
+
 - [ZEIT Domains Documentation](https://zeit.co/docs/v2/domains-and-aliases/adding-a-domain/)
 - [Zero-Downtime Domain Migration Guide](https://zeit.co/docs/v2/domains-and-aliases/zero-downtime-domain-migration/)

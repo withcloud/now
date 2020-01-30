@@ -8,32 +8,9 @@ import {
   trailingSlashSchema,
 } from '@now/routing-utils';
 import { NowConfig } from './types';
+import { functionsSchema, buildsSchema } from '@now/build-utils';
 
 const ajv = new Ajv();
-
-const buildsSchema = {
-  type: 'array',
-  minItems: 0,
-  maxItems: 128,
-  items: {
-    type: 'object',
-    additionalProperties: false,
-    required: ['use'],
-    properties: {
-      src: {
-        type: 'string',
-        minLength: 1,
-        maxLength: 4096,
-      },
-      use: {
-        type: 'string',
-        minLength: 3,
-        maxLength: 256,
-      },
-      config: { type: 'object' },
-    },
-  },
-};
 
 const validateBuilds = ajv.compile(buildsSchema);
 const validateRoutes = ajv.compile(routesSchema);
@@ -42,6 +19,7 @@ const validateHeaders = ajv.compile(headersSchema);
 const validateRedirects = ajv.compile(redirectsSchema);
 const validateRewrites = ajv.compile(rewritesSchema);
 const validateTrailingSlash = ajv.compile(trailingSlashSchema);
+const validateFunctions = ajv.compile(functionsSchema);
 
 export function validateNowConfigBuilds(config: NowConfig) {
   return validateKey(config, 'builds', validateBuilds);
@@ -69,6 +47,10 @@ export function validateNowConfigRewrites(config: NowConfig) {
 
 export function validateNowConfigTrailingSlash(config: NowConfig) {
   return validateKey(config, 'trailingSlash', validateTrailingSlash);
+}
+
+export function validateNowConfigFunctions(config: NowConfig) {
+  return validateKey(config, 'functions', validateFunctions);
 }
 
 function validateKey(

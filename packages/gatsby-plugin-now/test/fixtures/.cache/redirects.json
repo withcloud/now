@@ -1,0 +1,62 @@
+[
+  {
+    "fromPath": "/page2",
+    "isPermanent": true,
+    "redirectInBrowser": true,
+    "toPath": "/page-2"
+  },
+  {
+    "fromPath": "/page2/",
+    "isPermanent": true,
+    "redirectInBrowser": true,
+    "toPath": "/page-2/"
+  },
+  {
+    "fromPath": "/orange",
+    "isPermanent": false,
+    "redirectInBrowser": true,
+    "toPath": "/"
+  },
+  {
+    "fromPath": "/grape",
+    "isPermanent": false,
+    "redirectInBrowser": true,
+    "toPath": "/"
+  },
+  {
+    "fromPath": "/blue",
+    "isPermanent": false,
+    "redirectInBrowser": true,
+    "toPath": "/page-2/"
+  },
+  {
+    "fromPath": "/randirect",
+    "isPermanent": false,
+    "redirectInBrowser": true,
+    "toPath": "/page-2/"
+  },
+  {
+    "fromPath": "/juice",
+    "isPermanent": false,
+    "redirectInBrowser": true,
+    "toPath": "/"
+  },
+  {
+    "fromPath": "/soda",
+    "isPermanent": false,
+    "redirectInBrowser": true,
+    "toPath": "/"
+  },
+  {
+    "fromPath": "/donut",
+    "isPermanent": false,
+    "redirectInBrowser": true,
+    "toPath": "/page-2/"
+  },
+  {
+    "fromPath": "/randorect",
+    "isPermanent": false,
+    "redirectInBrowser": true,
+    "toPath": "/page-2/"
+  }
+]

@@ -44,7 +44,7 @@ async function initPrivateGit(credentials: string) {
   await writeFile(join(homedir(), '.git-credentials'), credentials);
 }
 
-export const version = 2;
+export const version = 3;
 
 export async function build({
   files,
@@ -70,7 +70,6 @@ Learn more: https://github.com/golang/go/wiki/Modules
 `);
   }
 
-  debug('Downloading user files...');
   const entrypointArr = entrypoint.split(sep);
 
   // eslint-disable-next-line prefer-const
@@ -405,9 +404,6 @@ Learn more: https://zeit.co/docs/v2/advanced/builders/#go
     runtime: 'go1.x',
     environment: {},
   });
-  const output = {
-    [entrypoint]: lambda,
-  };
 
   const watch = parsedAnalyzed.watch;
   let watchSub: string[] = [];
@@ -419,7 +415,7 @@ Learn more: https://zeit.co/docs/v2/advanced/builders/#go
   }
 
   return {
-    output,
+    output: lambda,
     watch: watch.concat(watchSub),
   };
 }

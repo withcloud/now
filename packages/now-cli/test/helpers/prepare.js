@@ -122,11 +122,6 @@ module.exports = async session => {
     'single-dotfile': {
       '.testing': 'i am a dotfile',
     },
-    'config-alias-property': {
-      'now.json':
-        '{ "alias": "test.now.sh", "builds": [ { "src": "*.html", "use": "@now/static" } ] }',
-      'index.html': '<span>test alias</span',
-    },
     'config-scope-property-email': {
       'now.json': `{ "scope": "${session}@zeit.pub", "builds": [ { "src": "*.html", "use": "@now/static" } ], "version": 2 }`,
       'index.html': '<span>test scope email</span',
@@ -204,7 +199,7 @@ fs.writeFileSync(
   'index.js',
   fs
     .readFileSync('index.js', 'utf8')
-    .replace('BUILD_ENV_DEBUG', process.env.NOW_BUILDER_DEBUG),
+    .replace('BUILD_ENV_DEBUG', process.env.NOW_BUILDER_DEBUG ? 'on' : 'off'),
 );
       `,
       'index.js': `
@@ -316,18 +311,39 @@ CMD ["node", "index.js"]`,
         files: ['.gitignore', 'folder', 'index.js', 'test.html'],
       }),
     },
+    'redirects-v2': {
+      'now.json': JSON.stringify({
+        version: 2,
+        name: 'redirects-v2',
+        redirects: [{ source: `/(.*)`, destination: 'https://example.com/$1' }],
+      }),
+    },
     'local-config-v2': {
       [`main-${session}.html`]: '<h1>hello main</h1>',
       [`test-${session}.html`]: '<h1>hello test</h1>',
       'now.json': JSON.stringify({
         version: 2,
+        name: 'original',
         builds: [{ src: `main-${session}.html`, use: '@now/static' }],
         routes: [{ src: '/another-main', dest: `/main-${session}.html` }],
       }),
       'now-test.json': JSON.stringify({
         version: 2,
+        name: 'secondary',
         builds: [{ src: `test-${session}.html`, use: '@now/static' }],
         routes: [{ src: '/another-test', dest: `/test-${session}.html` }],
+      }),
+    },
+    'local-config-above-target': {
+      'now-root.json': JSON.stringify({
+        version: 2,
+        name: 'root-level',
+      }),
+      'dir/index.html': '<h1>hello index</h1>',
+      'dir/another.html': '<h1>hello another</h1>',
+      'dir/now.json': JSON.stringify({
+        version: 2,
+        name: 'nested-level',
       }),
     },
     'alias-rules': {
@@ -366,10 +382,8 @@ CMD ["node", "index.js"]`,
     },
     'lambda-with-128-memory': {
       'api/memory.js': `
-        const os = require('os');
-
         module.exports = (req, res) => {
-          res.json({ memory: os.totalmem() });
+          res.json({ memory: parseInt(process.env.AWS_LAMBDA_FUNCTION_MEMORY_SIZE) });
         };
       `,
       'now.json': JSON.stringify({
@@ -382,10 +396,8 @@ CMD ["node", "index.js"]`,
     },
     'lambda-with-200-memory': {
       'api/memory.js': `
-        const os = require('os');
-
         module.exports = (req, res) => {
-          res.json({ memory: os.totalmem() });
+          res.json({ memory: parseInt(process.env.AWS_LAMBDA_FUNCTION_MEMORY_SIZE) });
         };
       `,
       'now.json': JSON.stringify({
@@ -432,33 +444,44 @@ CMD ["node", "index.js"]`,
         },
       }),
     },
-    'lambda-with-node-runtime': {
-      'api/test.js': `
-        module.exports = async (req, res) => {
-          res.end('done');
-        };
-      `,
+    'lambda-with-php-runtime': {
+      'api/test.php': `<?php echo 'Hello from PHP'; ?>`,
       'now.json': JSON.stringify({
         functions: {
-          'api/**/*.js': {
-            memory: 128,
-            runtime: '@now/node@1.0.0-canary.10',
+          'api/**/*.php': {
+            runtime: 'now-php@0.0.8',
           },
         },
       }),
     },
     'lambda-with-invalid-runtime': {
-      'api/test.js': `
-        module.exports = async (req, res) => {
-          res.end('done');
-        };
-      `,
+      'api/test.php': `<?php echo 'Hello from PHP'; ?>`,
       'now.json': JSON.stringify({
         functions: {
-          'api/**/*.js': {
+          'api/**/*.php': {
             memory: 128,
-            runtime: '@now/node@canary',
+            runtime: 'now-php@canary',
           },
+        },
+      }),
+    },
+    'github-and-scope-config': {
+      'index.txt': 'I Am a Website!',
+      'now.json': JSON.stringify({
+        scope: 'i-do-not-exist',
+        github: {
+          autoAlias: true,
+          autoJobCancelation: true,
+          enabled: true,
+          silent: true,
+        },
+      }),
+    },
+    'project-link': {
+      'pages/index.js': 'export default () => <div><h1>Now CLI test</h1></div>',
+      'package.json': JSON.stringify({
+        dependencies: {
+          gatsby: 'latest',
         },
       }),
     },

@@ -3,12 +3,18 @@
 import ms from 'ms';
 import bytes from 'bytes';
 import { promisify } from 'util';
-import { delimiter, dirname, join } from 'path';
+import { delimiter, dirname, extname, join } from 'path';
 import { fork, ChildProcess } from 'child_process';
 import { createFunction } from '@zeit/fun';
-import { Builder, File, Lambda, FileBlob, FileFsRef } from '@now/build-utils';
-import stripAnsi from 'strip-ansi';
-import chalk from 'chalk';
+import {
+  Builder,
+  File,
+  Lambda,
+  FileBlob,
+  FileFsRef,
+  detectApiDirectory,
+  detectApiExtensions,
+} from '@now/build-utils';
 import which from 'which';
 import plural from 'pluralize';
 import minimatch from 'minimatch';
@@ -28,9 +34,11 @@ import {
   BuildResult,
   BuilderInputs,
   BuilderOutput,
+  BuildResultV3,
   BuilderOutputs,
 } from './types';
 import { normalizeRoutes } from '@now/routing-utils';
+import getUpdateCommand from '../get-update-command';
 
 interface BuildMessage {
   type: string;
@@ -55,8 +63,7 @@ async function createBuildProcess(
   buildEnv: EnvConfig,
   workPath: string,
   output: Output,
-  yarnPath?: string,
-  debugEnabled: boolean = false
+  yarnPath?: string
 ): Promise<ChildProcess> {
   if (!nodeBinPromise) {
     nodeBinPromise = getNodeBin();
@@ -80,12 +87,6 @@ async function createBuildProcess(
     ...buildEnv,
     NOW_REGION: 'dev1',
   };
-
-  // Builders won't show debug logs by default.
-  // The `NOW_BUILDER_DEBUG` env variable enables them.
-  if (debugEnabled) {
-    env.NOW_BUILDER_DEBUG = '1';
-  }
 
   const buildProcess = fork(modulePath, [], {
     cwd: workPath,
@@ -153,8 +154,7 @@ export async function executeBuild(
       buildEnv,
       workPath,
       devServer.output,
-      yarnPath,
-      debug
+      yarnPath
     );
   }
 
@@ -173,7 +173,7 @@ export async function executeBuild(
     },
   };
 
-  let buildResultOrOutputs: BuilderOutputs | BuildResult;
+  let buildResultOrOutputs: BuilderOutputs | BuildResult | BuildResultV3;
   if (buildProcess) {
     buildProcess.send({
       type: 'build',
@@ -213,7 +213,7 @@ export async function executeBuild(
   }
 
   // Sort out build result to builder v2 shape
-  if (builder.version === undefined) {
+  if (!builder.version || builder.version === 1) {
     // `BuilderOutputs` map was returned (Now Builder v1 behavior)
     result = {
       output: buildResultOrOutputs as BuilderOutputs,
@@ -224,8 +224,53 @@ export async function executeBuild(
           ? buildResultOrOutputs.distPath
           : undefined,
     };
-  } else {
+  } else if (builder.version === 2) {
     result = buildResultOrOutputs as BuildResult;
+  } else if (builder.version === 3) {
+    const { output, ...rest } = buildResultOrOutputs as BuildResultV3;
+
+    if (!output || (output as BuilderOutput).type !== 'Lambda') {
+      throw new Error('The result of "builder.build()" must be a `Lambda`');
+    }
+
+    if (output.maxDuration) {
+      throw new Error(
+        'The result of "builder.build()" must not contain `memory`'
+      );
+    }
+
+    if (output.memory) {
+      throw new Error(
+        'The result of "builder.build()" must not contain `maxDuration`'
+      );
+    }
+
+    for (const [src, func] of Object.entries(config.functions || {})) {
+      if (src === entrypoint || minimatch(entrypoint, src)) {
+        if (func.maxDuration) {
+          output.maxDuration = func.maxDuration;
+        }
+
+        if (func.memory) {
+          output.memory = func.memory;
+        }
+
+        break;
+      }
+    }
+
+    result = {
+      ...rest,
+      output: {
+        [entrypoint]: output,
+      },
+    } as BuildResult;
+  } else {
+    throw new Error(
+      `Now CLI does not support builder version ${
+        builder.version
+      }.\nPlease run \`${await getUpdateCommand()}\` to update Now CLI.`
+    );
   }
 
   // Normalize Builder Routes
@@ -238,19 +283,20 @@ export async function executeBuild(
 
   const { output } = result;
 
-  // Mimic fmeta-util and convert cleanUrls
-  if (nowConfig.cleanUrls) {
-    Object.entries(output)
-      .filter(([name, value]) => name.endsWith('.html'))
-      .forEach(([name, value]) => {
-        const cleanName = name.slice(0, -5);
-        delete output[name];
-        output[cleanName] = value;
-        if (value.type === 'FileBlob' || value.type === 'FileFsRef') {
-          value.contentType = value.contentType || 'text/html; charset=utf-8';
-        }
-      });
-  }
+  const { cleanUrls } = nowConfig;
+  // Mimic fmeta-util and perform file renaming
+  Object.entries(output).forEach(([path, value]) => {
+    if (cleanUrls && path.endsWith('.html')) {
+      path = path.slice(0, -5);
+
+      if (value.type === 'FileBlob' || value.type === 'FileFsRef') {
+        value.contentType = value.contentType || 'text/html; charset=utf-8';
+      }
+    }
+
+    delete output[path];
+    output[path] = value;
+  });
 
   // Convert the JSON-ified output map back into their corresponding `File`
   // subclass type instances.
@@ -325,7 +371,7 @@ export async function executeBuild(
           Code: { ZipFile: asset.zipBuffer },
           Handler: asset.handler,
           Runtime: asset.runtime,
-          MemorySize: 3008,
+          MemorySize: asset.memory || 3008,
           Environment: {
             Variables: {
               ...nowConfig.env,
@@ -369,6 +415,9 @@ export async function getBuildMatches(
 
   const noMatches: Builder[] = [];
   const builds = nowConfig.builds || [{ src: '**', use: '@now/static' }];
+  const apiDir = detectApiDirectory(builds || []);
+  const apiExtensions = detectApiExtensions(builds || []);
+  const apiMatch = apiDir + '/';
 
   for (const buildConfig of builds) {
     let { src, use } = buildConfig;
@@ -387,6 +436,11 @@ export async function getBuildMatches(
     // We need to escape brackets since `glob` will
     // try to find a group otherwise
     src = src.replace(/(\[|\])/g, '[$1]');
+    const ext = extname(src);
+    if (apiDir && src.startsWith(apiMatch) && apiExtensions.has(ext)) {
+      // lambda function files are trimmed of their file extension
+      src = src.slice(0, -ext.length);
+    }
 
     const files = fileList
       .filter(name => name === src || minimatch(name, src))
